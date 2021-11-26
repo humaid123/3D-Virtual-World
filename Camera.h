@@ -15,6 +15,7 @@ float fov;
 float speed;
 float speedIncrement;
 float halflife;
+Vec3 displacement;
 
 float yaw;
 float pitch;
@@ -22,7 +23,7 @@ float width, height;
 public:
     Camera(int _width, int _height) {
         // Initialize camera position and direction
-        cameraPos = Vec3(0.0f, 0.0f, 3.0f);
+        cameraPos = Vec3(0.0f, 0.0f, 10.0f/*3.0f*/);
         cameraFront = Vec3(0.0f, -1.0f, 0.0f);
         cameraUp = Vec3(0.0f, 0.0f, 1.0f);
 

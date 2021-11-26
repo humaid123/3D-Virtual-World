@@ -1,9 +1,9 @@
 #ifndef TERRAIN_H
 #define TERRAIN_H
 
-
+#include <iostream>
 #include "loadTexture.h"
-#include "noise.h"
+//#include "noise.h"
 
 #include <OpenGP/GL/Application.h>
 #include "OpenGP/GL/Eigen.h"
@@ -24,7 +24,7 @@ class Terrain {
 public:
     std::unique_ptr<Shader> terrainShader;
     std::unique_ptr<GPUMesh> terrainMesh;
-    std::unique_ptr<R32FTexture> heightTexture;
+    //std::unique_ptr<R32FTexture> heightTexture;
     std::map<std::string, std::unique_ptr<RGBA8Texture>> terrainTextures;
     float waveMotion = 0.0f;
    
@@ -36,7 +36,7 @@ public:
         terrainShader->add_fshader_from_source(terrain_fshader);
         terrainShader->link();
 
-        heightTexture = std::unique_ptr<R32FTexture>(fBm2DTexture());
+        //heightTexture = std::unique_ptr<R32FTexture>(fBm2DTexture());
 
         const std::string list[] = { "grass", "rock", "sand", "snow", "water" };
         for (int i=0 ; i < 5 ; ++i) {
@@ -75,6 +75,7 @@ public:
                 float vertX = -f_width / 2 + j / (float)n_width * f_width;
                 float vertY = -f_height / 2 + i / (float)n_height * f_height;
                 float vertZ = 0.0f;
+                //std::cout << vertX << " " << vertY << std::endl;
                 points.push_back(Vec3(vertX, vertY, vertZ));
 
                 // Calculate texture coordinates
@@ -139,8 +140,8 @@ public:
 
         // Bind height texture and set uniform noiseTex
         glActiveTexture(GL_TEXTURE0);
-        heightTexture->bind();
-        terrainShader->set_uniform("noiseTex", 0);
+        //heightTexture->bind();
+        //terrainShader->set_uniform("noiseTex", 0);
 
         // Draw terrain using triangle strips
         glEnable(GL_DEPTH_TEST);

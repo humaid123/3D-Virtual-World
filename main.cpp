@@ -2,7 +2,7 @@
 #include "OpenGP/GL/Eigen.h"
 
 #include "loadTexture.h"
-#include "noise.h"
+// #include "noise.h"
 #include "Terrain.h"
 #include "Skybox.h"
 #include "Camera.h"
@@ -12,10 +12,6 @@
 using namespace OpenGP;
 const int width=1280, height=720;
 
-// const unsigned resPrim = 999999;
-
-// void init();
-
 int main(int, char**){
 
     Application app;
@@ -23,24 +19,21 @@ int main(int, char**){
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
     // Enable seamless cubemap
     glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+    // enable depth test for skybox and so on
+    glEnable(GL_DEPTH_TEST);
+
 
     Terrain terrain;
     Skybox skybox;
     Camera camera(width, height);
 
+
     // Display callback
     Window& window = app.create_window([&](Window&){
-
-        // Mac OSX Configuration (2:1 pixel density)
-        glViewport(0,0,width*2,height*2);
-
-        // Windows Configuration (1:1 pixel density)
-        //glViewport(0,0,width,height);
-
+        glViewport(0,0,width,height);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        skybox.draw(camera);
-        glClear(GL_DEPTH_BUFFER_BIT);
         terrain.draw(camera);
+        skybox.draw(camera);
     });
     window.set_title("3D-Virtual-World");
     window.set_size(width, height);
@@ -52,7 +45,6 @@ int main(int, char**){
         // Camera control
         Vec2 delta = m.position - mouse;
         camera.updateYawAndPitch(delta);
-
         mouse = m.position;
     });
 

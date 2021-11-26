@@ -1,6 +1,6 @@
 R"(
 #version 330 core
-uniform sampler2D noiseTex;
+//uniform sampler2D noiseTex;
 
 in vec3 vposition;
 in vec2 vtexcoord;
@@ -8,6 +8,7 @@ in vec2 vtexcoord;
 uniform mat4 M;
 uniform mat4 V;
 uniform mat4 P;
+uniform vec3 viewPos; // camera position, we translate the grid using it...
 
 out vec2 uv;
 out vec3 fragPos;
@@ -141,15 +142,24 @@ float hybridMultiFractal(vec2 point) {
 
 void main() {
 
-    uv = vtexcoord;
+    // old =>  vec3 position = vposition;
+    vec3 position = vposition + (vec3(viewPos.x, viewPos.y, 0)); // displace the position so that we get an infinite world
+
+    // old - uv = vtexcoord;
+    // we get the tex coordinate from the perturbed position normalised in [0, 1], so we bring to 0 to f_width 
+    // and we divide by f_width
+    uv = vec2(
+        (position.x + 5.0/2.0) / 5, 
+        (position.y + 5.0/2.0) / 5
+    );
 
     // Earth scene
     float water = 0.7f;
-
+    
     // Calculate height
     // float h = (texture(noiseTex, uv).r + 1.0f) / 2.0f;
-    // float h = 2 * cnoise(vposition.xy);
-    float h = hybridMultiFractal(vposition.xy);
+    // float h = 2 * cnoise(position.xy);
+    float h = hybridMultiFractal(position.xy);
     // h = max(h, water);
     height = h;
 
@@ -157,31 +167,31 @@ void main() {
     // Calculate surface normal N
 
     // classic perlin
-    // vec3 A = vec3(vposition.x + 1.0f, vposition.y       , 2*cnoise(vposition.xy + (1, 0))    );
-    // vec3 B = vec3(vposition.x - 1.0f, vposition.y       , 2*cnoise(vposition.xy + (-1, 0))   );
-    // vec3 C = vec3(vposition.x       , vposition.y + 1.0f, 2*cnoise(vposition.xy + (0, 1))    );
-    // vec3 D = vec3(vposition.x       , vposition.y - 1.0f, 2*cnoise(vposition.xy + (0, -1))   );
+    // vec3 A = vec3(position.x + 1.0f, position.y       , 2*cnoise(position.xy + (1, 0))    );
+    // vec3 B = vec3(position.x - 1.0f, position.y       , 2*cnoise(position.xy + (-1, 0))   );
+    // vec3 C = vec3(position.x       , position.y + 1.0f, 2*cnoise(position.xy + (0, 1))    );
+    // vec3 D = vec3(position.x       , position.y - 1.0f, 2*cnoise(position.xy + (0, -1))   );
 
 
     // hybrid multifractal
-    vec3 A = vec3(vposition.x + 1.0f, vposition.y       , hybridMultiFractal(vposition.xy + (1, 0))    );
-    vec3 B = vec3(vposition.x - 1.0f, vposition.y       , hybridMultiFractal(vposition.xy + (-1, 0))   );
-    vec3 C = vec3(vposition.x       , vposition.y + 1.0f, hybridMultiFractal(vposition.xy + (0, 1))    );
-    vec3 D = vec3(vposition.x       , vposition.y - 1.0f, hybridMultiFractal(vposition.xy + (0, -1))   );
+    vec3 A = vec3(position.x + 1.0f, position.y       , hybridMultiFractal(position.xy + (1, 0))    );
+    vec3 B = vec3(position.x - 1.0f, position.y       , hybridMultiFractal(position.xy + (-1, 0))   );
+    vec3 C = vec3(position.x       , position.y + 1.0f, hybridMultiFractal(position.xy + (0, 1))    );
+    vec3 D = vec3(position.x       , position.y - 1.0f, hybridMultiFractal(position.xy + (0, -1))   );
     vec3 n = normalize( cross(A - B , C - D) );
     normal = n;
 
     // Calculate Slopes & Levels
     float denom = 1.0f;
     float s = 0.0f;
-    s = max(s, (A.y - vposition.y) / denom);
-    s = max(s, (B.y - vposition.y) / denom);
-    s = max(s, (C.y - vposition.y) / denom);
-    s = max(s, (D.y - vposition.y) / denom);
+    s = max(s, (A.y - position.y) / denom);
+    s = max(s, (B.y - position.y) / denom);
+    s = max(s, (C.y - position.y) / denom);
+    s = max(s, (D.y - position.y) / denom);
     slope = s;
 
     // Set fragment position
-    fragPos = vposition.xyz + vec3(0,0,h);
+    fragPos = position.xyz + vec3(0,0,h);
 
     // Set gl_Position
     gl_Position = P*V*M*vec4(fragPos, 1.0f);

@@ -10,6 +10,10 @@ uniform mat4 V;
 uniform mat4 P;
 uniform vec3 viewPos; // camera position, we translate the grid using it...
 
+// clip plane
+uniform vec3 clipPlaneNormal;
+uniform float clipPlaneHeight;
+
 out vec2 uv;
 out vec3 fragPos;
 out float waterHeight;
@@ -153,14 +157,13 @@ void main() {
         (position.y + 5.0/2.0) / 5
     );
 
-    // Earth scene
     float water = 0.7f;
     
     // Calculate height
     // float h = (texture(noiseTex, uv).r + 1.0f) / 2.0f;
     // float h = 2 * cnoise(position.xy);
     float h = hybridMultiFractal(position.xy);
-    // h = max(h, water);
+    //h = max(h, water);
     height = h;
 
     // calculate the normal
@@ -198,5 +201,29 @@ void main() {
 
     // Set height of water
     waterHeight = water;
+
+
+    // we also add a clipping plane for the water rendering...
+    // set up clipping planes
+    // every vertex now needs to give a distance from it to the clip plane
+    // if that distance is positive, the vertex is rendered
+    // if that distance is negative, the vertex is not rendered
+    // opengl will interpolate the distance for points in the middle of vertices to clip them
+    
+    // to define a plane, we can just use the plane equations
+    // we can declare a z = k plane with a normal of (0, -1, 0) and a height
+    vec4 plane = vec4(clipPlaneNormal, clipPlaneHeight); // we can represent a vector with just this
+    
+
+    // to find the distance from a vertex to a plane, you just need to 
+    // do the dot product of the vertex with the plane vector
+    float distance_of_this_vertex = dot(plane, vec4(fragPos, 1.0)); // need to compare with NON view-space coordinates, i.e, pre-transformation as plane is defined pre-transformation
+    gl_ClipDistance[0] = distance_of_this_vertex;
+    // if (h < waterHeight) {
+    //    gl_ClipDistance[0] = -1;
+    //} else {
+    //    gl_ClipDistance[0] = 1;
+    //}
+
 }
 )"

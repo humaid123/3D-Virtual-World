@@ -113,7 +113,7 @@ public:
         terrainMesh->set_vtexcoord(texCoords);
     }
 
-    void draw(Camera camera) {
+    void draw(Camera camera, Vec3 clipPlaneNormal, float clipPlaneHeight) {
         terrainShader->bind();
 
         // Generate and set Model
@@ -128,6 +128,10 @@ public:
 
         // Set camera position
         terrainShader->set_uniform("viewPos", camera.cameraPos);
+
+        // set clipping plane for the reflection and refraction
+        terrainShader->set_uniform("clipPlaneNormal", clipPlaneNormal);
+        terrainShader->set_uniform("clipPlaneHeight", clipPlaneHeight);
 
         // Bind textures
         int i = 0;
@@ -144,7 +148,7 @@ public:
         //terrainShader->set_uniform("noiseTex", 0);
 
         // Draw terrain using triangle strips
-        glEnable(GL_DEPTH_TEST);
+        //wwwwwwwwwglEnable(GL_DEPTH_TEST);
         terrainMesh->set_attributes(*terrainShader);
         terrainMesh->set_mode(GL_TRIANGLE_STRIP);
         glEnable(GL_PRIMITIVE_RESTART);

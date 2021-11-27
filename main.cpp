@@ -6,6 +6,7 @@
 #include "Terrain.h"
 #include "Skybox.h"
 #include "Camera.h"
+#include "Water.h"
 #include <iostream>
 
 
@@ -25,15 +26,60 @@ int main(int, char**){
 
     Terrain terrain;
     Skybox skybox;
+
+    float waterHeight = 0.7f;
+    Water water(waterHeight);
     Camera camera(width, height);
 
+    Vec3 clipPlaneNormal = Vec3(0, 0, -1); // Vec3(0, -1, 0);
+    float clipPlaneHeight = 1000;
+
+
+    // REFLECTION IS NOT GETTING CULLED NEED TO TEST THAT....
+    Vec3 reflectionClipPlaneNormal = Vec3(0, 0, 1); // Vec3(0, 1, 0);
+    float reflectionClipPlaneHeight = -waterHeight;
+
+    Vec3 refractionClipPlaneNormal = Vec3(0, 0, -1); //Vec3(0, -1, 0);
+    float refractionClipPlaneHeight = waterHeight;
 
     // Display callback
     Window& window = app.create_window([&](Window&){
-        glViewport(0,0,width,height);
+
+        glEnable(GL_CLIP_DISTANCE0); // enables the first clipping plane in the program => shaders can now use gl_ClipDistance[0]
+
+        glViewport(0, 0, water.reflectionWidth, water.reflectionHeight);
+        water.reflectionFBO->bind();
+        // to get the reflection, the camera needs to move down and point upwards => move by current distance * 2 down and flip
+        // this draws the reflection into the texture
+        float distance = 2 * (camera.cameraPos.z() - waterHeight);
+        camera.cameraPos.z() -= distance;
+        camera.invertPitch();
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        terrain.draw(camera);
+ 
         skybox.draw(camera);
+        terrain.draw(camera, reflectionClipPlaneNormal, reflectionClipPlaneHeight);
+       
+
+        water.reflectionFBO->unbind();
+        camera.cameraPos.z() += distance;
+        camera.invertPitch();
+
+
+        glViewport(0, 0, water.refractionWidth, water.refractionHeight);
+        water.refractionFBO->bind();
+
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        // skybox.draw(camera);
+        terrain.draw(camera, refractionClipPlaneNormal, refractionClipPlaneHeight);
+       
+        water.refractionFBO->unbind();
+
+        // actual drawing
+        glViewport(0, 0, width, height);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        terrain.draw(camera, clipPlaneNormal, clipPlaneHeight);
+        skybox.draw(camera);
+        water.draw(camera);
     });
     window.set_title("3D-Virtual-World");
     window.set_size(width, height);

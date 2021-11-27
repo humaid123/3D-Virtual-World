@@ -23,7 +23,7 @@ float width, height;
 public:
     Camera(int _width, int _height) {
         // Initialize camera position and direction
-        cameraPos = Vec3(0.0f, 0.0f, 10.0f/*3.0f*/);
+        cameraPos = Vec3(0.0f, 0.0f, /*10.0f*/3.0f);
         cameraFront = Vec3(0.0f, -1.0f, 0.0f);
         cameraUp = Vec3(0.0f, 0.0f, 1.0f);
 
@@ -51,9 +51,23 @@ public:
         if(pitch > PI/2.0f - 0.01f)  pitch =  PI/2.0f - 0.01f;
         if(pitch <  -PI/2.0f + 0.01f) pitch =  -PI/2.0f + 0.01f;
 
-        Vec3 front(0,0,0);
-        front[0] = sin(yaw)*cos(pitch);
-        front[1] = cos(yaw)*cos(pitch);
+        Vec3 front(0, 0, 0);
+        front[0] = sin(yaw) * cos(pitch);
+        front[1] = cos(yaw) * cos(pitch);
+        front[2] = sin(pitch);
+
+        cameraFront = front.normalized();
+    }
+
+    void invertPitch() {
+        pitch = -pitch;
+
+        if (pitch > PI / 2.0f - 0.01f)  pitch = PI / 2.0f - 0.01f;
+        if (pitch < -PI / 2.0f + 0.01f) pitch = -PI / 2.0f + 0.01f;
+
+        Vec3 front(0, 0, 0);
+        front[0] = sin(yaw) * cos(pitch);
+        front[1] = cos(yaw) * cos(pitch);
         front[2] = sin(pitch);
 
         cameraFront = front.normalized();
@@ -101,6 +115,7 @@ public:
     }
 
     Mat4x4 viewMatrix() {
+
         Vec3 look = cameraFront + cameraPos;
         Mat4x4 V = lookAt(cameraPos, look, cameraUp);
         return V;

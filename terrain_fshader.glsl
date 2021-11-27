@@ -39,9 +39,9 @@ void main() {
 
     // Slopes & Levels - Earth
     float tempWaterHeight = waterHeight;
-    float sandLevel = waterHeight + 0.02f;
-    float grassLevel = sandLevel + 0.07f;
-    float snowLevel = 1.0f;
+    float sandLevel = waterHeight + 0.07f;
+    float grassLevel = sandLevel + 0.5f;
+    float snowLevel = 2.0f;
     float sandSlope = 0.7f;
     float snowSlope = 0.85f;
     vec4 col = texture(sand, uv);
@@ -50,14 +50,19 @@ void main() {
     // Texture according to height and slope
     float specularPower = (height / 1.0f) * 10.0f;
 
-    // Texture with water if height lies below waterHeight
-    if (height < tempWaterHeight) {
-        col = texture(water, layeredWaterCoordinates);
-        specularPower = 200.0f;
-    }
+    // old Texture with water if height lies below waterHeight
+    // old - if (height < tempWaterHeight) {
+    // old -   col = texture(water, layeredWaterCoordinates);
+    // old -   specularPower = 200.0f;
+    // old - }
 
-    // Texture with sand
-    if (height > tempWaterHeight && height < sandLevel && slope < sandSlope) {
+    // old // Texture with sand
+    // old if (height > tempWaterHeight && height < sandLevel && slope < sandSlope) {
+    // old     col = texture(sand, uv);
+    // old     specularPower = 1.0f;
+    // old }
+
+    if (height < sandLevel && slope < sandSlope) {
         col = texture(sand, uv);
         specularPower = 1.0f;
     }

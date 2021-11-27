@@ -2,7 +2,11 @@
 #include "OpenGP/GL/Eigen.h"
 
 #include "loadTexture.h"
-// #include "noise.h"
+
+// new
+// #include "ParticleMaster.h"
+// new 
+
 #include "Terrain.h"
 #include "Skybox.h"
 #include "Camera.h"
@@ -26,7 +30,11 @@ int main(int, char**){
 
     Terrain terrain;
     Skybox skybox;
-
+    
+    // new
+    // ParticleSystem particleSystem;
+    // new
+    
     float waterHeight = 0.7f;
     Water water(waterHeight);
     Camera camera(width, height);
@@ -44,6 +52,12 @@ int main(int, char**){
 
     // Display callback
     Window& window = app.create_window([&](Window&){
+        float time = glfwGetTime();
+
+        // new
+        // particleSystem.update(time);
+        // particleSystem.emitParticles(camera.cameraPos);
+        // new
 
         glEnable(GL_CLIP_DISTANCE0); // enables the first clipping plane in the program => shaders can now use gl_ClipDistance[0]
 
@@ -55,11 +69,8 @@ int main(int, char**){
         camera.cameraPos.z() -= distance;
         camera.invertPitch();
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
- 
         skybox.draw(camera);
-        terrain.draw(camera, reflectionClipPlaneNormal, reflectionClipPlaneHeight);
-       
-
+        terrain.draw(camera, reflectionClipPlaneNormal, reflectionClipPlaneHeight, waterHeight);
         water.reflectionFBO->unbind();
         camera.cameraPos.z() += distance;
         camera.invertPitch();
@@ -67,19 +78,20 @@ int main(int, char**){
 
         glViewport(0, 0, water.refractionWidth, water.refractionHeight);
         water.refractionFBO->bind();
-
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        // skybox.draw(camera);
-        terrain.draw(camera, refractionClipPlaneNormal, refractionClipPlaneHeight);
-       
+        terrain.draw(camera, refractionClipPlaneNormal, refractionClipPlaneHeight, waterHeight);
         water.refractionFBO->unbind();
 
         // actual drawing
         glViewport(0, 0, width, height);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        terrain.draw(camera, clipPlaneNormal, clipPlaneHeight);
+        terrain.draw(camera, clipPlaneNormal, clipPlaneHeight, waterHeight);
         skybox.draw(camera);
-        water.draw(camera);
+        water.draw(camera, time);
+
+        // new 
+        // particleSystem.draw(camera);
+        // new 
     });
     window.set_title("3D-Virtual-World");
     window.set_size(width, height);

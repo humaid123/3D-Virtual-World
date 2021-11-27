@@ -16,7 +16,6 @@ uniform float clipPlaneHeight;
 
 out vec2 uv;
 out vec3 fragPos;
-out float waterHeight;
 out vec3 normal;
 out float height;
 out float slope;
@@ -153,11 +152,12 @@ void main() {
     // we get the tex coordinate from the perturbed position normalised in [0, 1], so we bring to 0 to f_width 
     // and we divide by f_width
     uv = vec2(
-        (position.x + 5.0/2.0) / 5, 
-        (position.y + 5.0/2.0) / 5
+        (position.x + 7.0/2.0) / 7, 
+        (position.y + 7.0/2.0) / 7
     );
-
-    float water = 0.7f;
+    // we then tile the uv coordinates
+    int num_tiles = 10; 
+    uv = (uv * num_tiles); // make opengl repeat the texture so we get higher resolution 
     
     // Calculate height
     // float h = (texture(noiseTex, uv).r + 1.0f) / 2.0f;
@@ -185,22 +185,17 @@ void main() {
     normal = n;
 
     // Calculate Slopes & Levels
-    float denom = 1.0f;
-    float s = 0.0f;
-    s = max(s, (A.y - position.y) / denom);
-    s = max(s, (B.y - position.y) / denom);
-    s = max(s, (C.y - position.y) / denom);
-    s = max(s, (D.y - position.y) / denom);
-    slope = s;
+    // angle between normal and the up vector
+    slope = 1 - dot(
+        normalize(P*M*V*vec4(normal, 0.0f)) , 
+        vec4(0, 0, 1, 0)
+    ); 
 
     // Set fragment position
     fragPos = position.xyz + vec3(0,0,h);
 
     // Set gl_Position
     gl_Position = P*V*M*vec4(fragPos, 1.0f);
-
-    // Set height of water
-    waterHeight = water;
 
 
     // we also add a clipping plane for the water rendering...

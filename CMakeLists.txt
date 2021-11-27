@@ -19,7 +19,7 @@ file(COPY ${PROJECT_SOURCE_DIR}/trial_v2/Textures/rock.png DESTINATION ${CMAKE_C
 file(COPY ${PROJECT_SOURCE_DIR}/trial_v2/Textures/snow.png DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 file(COPY ${PROJECT_SOURCE_DIR}/trial_v2/Textures/water.png DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 #file(COPY ${PROJECT_SOURCE_DIR}/trial/Textures/water_waves.png DESTINATION #${CMAKE_CURRENT_BINARY_DIR})
-#file(COPY ${PROJECT_SOURCE_DIR}/trial/Textures/lunar.png DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+file(COPY ${PROJECT_SOURCE_DIR}/trial/Textures/lunar.png DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 # Skybox imports
 file(COPY ${PROJECT_SOURCE_DIR}/trial_v2/Textures/miramar_bk.png DESTINATION ${CMAKE_CURRENT_BINARY_DIR})

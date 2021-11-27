@@ -44,8 +44,8 @@ public:
         waterMesh = std::unique_ptr<GPUMesh>(new GPUMesh());
 
         // Grid dimensions (centered at (0, 0))
-        float f_width = 5.0f;
-        float f_height = 5.0f;
+        float f_width = 7.0f;
+        float f_height = 7.0f;
 
         std::vector<Vec3> points;
         std::vector<unsigned int> indices = {0, 2, 1, 2, 3, 1};
@@ -121,7 +121,7 @@ public:
     //    refractionFBO->cleanUp();
     //}
 
-    void draw(Camera camera) {
+    void draw(Camera camera, float time) {
         waterShader->bind();
 
         // Generate and set Model
@@ -148,6 +148,8 @@ public:
         glActiveTexture(GL_TEXTURE2);
         waterTexture->bind();
         waterShader->set_uniform("waterTexture", 2);
+
+        waterShader->set_uniform("time", time);
 
         // Draw terrain using triangle strips
         // glEnable(GL_DEPTH_TEST);

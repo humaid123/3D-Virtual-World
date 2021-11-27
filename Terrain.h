@@ -24,10 +24,7 @@ class Terrain {
 public:
     std::unique_ptr<Shader> terrainShader;
     std::unique_ptr<GPUMesh> terrainMesh;
-    //std::unique_ptr<R32FTexture> heightTexture;
     std::map<std::string, std::unique_ptr<RGBA8Texture>> terrainTextures;
-    float waveMotion = 0.0f;
-   
 
     Terrain() {
         terrainShader = std::unique_ptr<Shader>(new Shader());
@@ -36,9 +33,7 @@ public:
         terrainShader->add_fshader_from_source(terrain_fshader);
         terrainShader->link();
 
-        //heightTexture = std::unique_ptr<R32FTexture>(fBm2DTexture());
-
-        const std::string list[] = { "grass", "rock", "sand", "snow", "water" };
+        const std::string list[] = { "grass", "rock", "sand", "snow", "lunar" };
         for (int i=0 ; i < 5 ; ++i) {
             loadTexture(terrainTextures[list[i]], (list[i]+".png").c_str());
             terrainTextures[list[i]]->bind();
@@ -54,14 +49,14 @@ public:
         terrainMesh = std::unique_ptr<GPUMesh>(new GPUMesh());
 
         // Grid resolution
-        int n_width = 1024;
-        int n_height = 1024;
-        //int n_width = 256;
-        //int n_height = 256;
+        //int n_width = 1024;
+        //int n_height = 1024;
+        int n_width = 256;
+        int n_height = 256;
 
         // Grid dimensions (centered at (0, 0))
-        float f_width = 5.0f;
-        float f_height = 5.0f;
+        float f_width = 7.0f; // 5.0f;
+        float f_height = 7.0f; // 5.0f;
 
         std::vector<Vec3> points;
         std::vector<unsigned int> indices;
@@ -113,7 +108,7 @@ public:
         terrainMesh->set_vtexcoord(texCoords);
     }
 
-    void draw(Camera camera, Vec3 clipPlaneNormal, float clipPlaneHeight) {
+    void draw(Camera camera, Vec3 clipPlaneNormal, float clipPlaneHeight, float waterHeight) {
         terrainShader->bind();
 
         // Generate and set Model
@@ -132,6 +127,7 @@ public:
         // set clipping plane for the reflection and refraction
         terrainShader->set_uniform("clipPlaneNormal", clipPlaneNormal);
         terrainShader->set_uniform("clipPlaneHeight", clipPlaneHeight);
+        terrainShader->set_uniform("waterHeight", waterHeight);
 
         // Bind textures
         int i = 0;
@@ -155,13 +151,6 @@ public:
         glPrimitiveRestartIndex(resPrim);
 
         terrainMesh->draw();
-
-        // Generate wave motion and set uniform wave_motion
-        terrainShader->set_uniform("waveMotion", waveMotion);
-        waveMotion += 0.00004f;
-        if (waveMotion > 1.0f) {
-            waveMotion = 0.0f;
-        }
 
         terrainShader->unbind();
     }

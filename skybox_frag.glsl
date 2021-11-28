@@ -7,6 +7,7 @@ in vec3 texCoords;
 uniform samplerCube skybox;
 uniform sampler2D cloudTexture;
 uniform float time;
+uniform vec3 baseSkyColor;
 
 // worley noise => https://www.shadertoy.com/view/lscyzl
 // Permutation polynomial: (34x^2 + x) mod 289
@@ -196,11 +197,11 @@ float Perlin4D( vec4 P )
 
 float fbm(vec4 uv) {
     float total = 0.0;
-    float persistence = 0.5;
+    float lacunarity = 2;
     int octaves = 8;
-    for(int i = 1; i <= octaves; i++) {
-        float freq = pow(2.f, float(i));
-        float amp = pow(persistence, float(i));
+    for(int i = 0; i < octaves; i++) {
+        float freq = pow(lacunarity, float(i));
+        float amp = pow(1/lacunarity, float(i));
         total += Perlin4D(uv * freq) * amp;
     }
     return total;
@@ -210,21 +211,21 @@ void main() {
     // FragColor = texture(skybox, texCoords);
     // FragColor = vec4(1-WorleyFBM(texCoords.xy), 1-WorleyFBM(texCoords.yz), 1-WorleyFBM(texCoords.xz), 1.0f);
     // float noise = Perlin4D(vec4(2 * texCoords, time/20));
-    float noise = fbm(vec4(2*texCoords, time/20));
-
-    vec4 skyColor = 0.4 * texture(skybox, texCoords) + 0.6*vec4(0.6, 0.7, 0.8, 1.0); // make more blueish than actual texture
+    float noise = fbm(0.5 * vec4(2*texCoords, time/2));
+    // FragColor = vec4(noise, noise, noise, 1.0f);
+    vec4 skyColor = 0.4 * texture(skybox, texCoords) + 0.6*vec4(baseSkyColor, 1.0); // make more blueish than actual texture
     
     // use homogenous coordinates for the reduction
-    vec4 cloudColor = 0.4 * texture(cloudTexture, texCoords.xy/texCoords.z) + 0.6 * vec4(0.7, 0.8, 0.9, 1.0); // make whiter than the actual texture 
+    vec4 cloudColor = 0.5 * texture(cloudTexture, texCoords.xy/texCoords.z) + 0.5 * vec4(1, 1, 1, 1.0); // make whiter than the actual texture 
 
     if (noise > 0. && noise <= 0.15) {
         // mix to get seemless transition
-        float scale = 1 - (noise / 0.1);
+        float scale = 1 - (noise / 0.15);
         FragColor = scale * skyColor + (1-scale) * cloudColor; 
     } else if (noise > 0.15) {
         // dimensionality reduction is done by homogenouse coordinates
-        float scale = 1 - (noise / 0.1);
-        FragColor = scale * cloudColor + (1 - scale) * vec4(1.0, 1.0, 1.0, 1.0); 
+        float scale = (noise / 0.1);
+        FragColor = cloudColor; 
     } else {
         FragColor = skyColor;
     }

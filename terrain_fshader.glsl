@@ -11,6 +11,8 @@ uniform sampler2D lunar;
 
 uniform vec3 viewPos;
 uniform float waterHeight;
+uniform vec3 skyColor;
+uniform vec3 lightPos;
 
 
 // In
@@ -19,18 +21,16 @@ in vec3 fragPos;
 in float height;
 in vec3 normal;
 in float slope; 
+in vec3 distanceFromCamera;
 
 // Out
 out vec4 color;
 
 void main() {
 
-    // Directional light source
-    vec3 lightPos = vec3(1.0f, 1.0f, 4.0f);
-
-    float sandLevel = waterHeight + 0.07f;
+    float sandLevel = waterHeight + 0.03f;
     float grassLevel = sandLevel + 0.3f;
-    float rockLevel = grassLevel + 0.5f;
+    float rockLevel = grassLevel + 0.6f;
     float lunarLevel = rockLevel + 0.6f;
     float snowLevel = lunarLevel + 0.4f;
     float snowSlope = 0.05f; // slope is the dot product between the normal and the up vector, if the value is small => we get a perpendicular so the slope is too big
@@ -134,6 +134,18 @@ void main() {
         col += (ambient + diffuse);
     }
 
-    color = vec4(col);
+    // we now mix the color with the skycolor based on the distance from the camera
+    // we use the visibility formula to detect how far an object is from the camera
+    // 1 => render normaly, 0 => fade into the skycolor
+    // visibility takes the distance from the camera and use an exponential decrease so that the fog scaling looks more natural
+    // visibility = exp(-pow(distance * density, gradient)) is such a formula
+    // density = thickness of the fog, higher value means less visiblr
+    // gradient = how quickly the visibility decreases with distance
+    float density = 0.1;
+    float gradient = 1.5;
+    float distance = length(distanceFromCamera.xyz);
+    float visibility = exp(-pow(distance * density, gradient));
+    visibility = clamp(visibility, 0.0, 1.0);
+    color = mix(vec4(skyColor, 1.0f),  col, visibility);
 }
 )"

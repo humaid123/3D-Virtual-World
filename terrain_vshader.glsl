@@ -19,6 +19,7 @@ out vec3 fragPos;
 out vec3 normal;
 out float height;
 out float slope;
+out vec3 distanceFromCamera;
 
 
 // =====================================================================================
@@ -101,7 +102,7 @@ float hybridMultiFractal(vec2 point) {
     float offset =  0.7;
     float lacunarity = 2;
     float octaves = 8;
-    float frequency = 0.7;
+    float frequency = 0.45; //0.7;
 
 
 	float value = 1.0;
@@ -138,7 +139,7 @@ float hybridMultiFractal(vec2 point) {
 
 	/* take care of remainder in ``octaves''  */
 	rmd = octaves - floor(octaves);
-	if (rmd != 0.0) value += (rmd * snoise(point*frequency) * pwr);
+	if (rmd != 0.0) value += (rmd * cnoise(point*frequency) * pwr);
 
 	return value;
 }
@@ -148,15 +149,18 @@ void main() {
     // old =>  vec3 position = vposition;
     vec3 position = vposition + (vec3(viewPos.x, viewPos.y, 0)); // displace the position so that we get an infinite world
 
+
     // old - uv = vtexcoord;
+    // we texture based on the perturbed position now so that the texturing scale with the infinite world
     // we get the tex coordinate from the perturbed position normalised in [0, 1], so we bring to 0 to f_width 
     // and we divide by f_width
-    uv = vec2(
-        (position.x + 7.0/2.0) / 7, 
-        (position.y + 7.0/2.0) / 7
-    );
-    // we then tile the uv coordinates
-    int num_tiles = 10; 
+    uv = (position.xy + 20/2) / 20; 
+    // vec2(
+    //    (position.x + 20.0/2.0) / 20, 
+    //    (position.y + 20.0/2.0) / 20
+    // );
+    // we then tile the uv coordinates so that the textures are repeated => we get higher resolution
+    int num_tiles = 20; 
     uv = (uv * num_tiles); // make opengl repeat the texture so we get higher resolution 
     
     // Calculate height
@@ -196,6 +200,9 @@ void main() {
 
     // Set gl_Position
     gl_Position = P*V*M*vec4(fragPos, 1.0f);
+
+    // set distance from camera to scale the visibility
+    distanceFromCamera = fragPos - viewPos;
 
 
     // we also add a clipping plane for the water rendering...

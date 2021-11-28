@@ -3,7 +3,6 @@
 
 #include <iostream>
 #include "loadTexture.h"
-//#include "noise.h"
 
 #include <OpenGP/GL/Application.h>
 #include "OpenGP/GL/Eigen.h"
@@ -25,8 +24,12 @@ public:
     std::unique_ptr<Shader> terrainShader;
     std::unique_ptr<GPUMesh> terrainMesh;
     std::map<std::string, std::unique_ptr<RGBA8Texture>> terrainTextures;
+    float waterHeight;
+    Vec3 skyColor;
+    Vec3 lightPos;
 
-    Terrain() {
+    Terrain(float size_grid_x, float size_grid_y, float _waterHeight, Vec3 _skyColor, Vec3 _lightPos) 
+        : waterHeight(_waterHeight), skyColor(_skyColor), lightPos(_lightPos) {
         terrainShader = std::unique_ptr<Shader>(new Shader());
         terrainShader->verbose = true;
         terrainShader->add_vshader_from_source(terrain_vshader);
@@ -49,14 +52,8 @@ public:
         terrainMesh = std::unique_ptr<GPUMesh>(new GPUMesh());
 
         // Grid resolution
-        //int n_width = 1024;
-        //int n_height = 1024;
-        int n_width = 256;
-        int n_height = 256;
-
-        // Grid dimensions (centered at (0, 0))
-        float f_width = 7.0f; // 5.0f;
-        float f_height = 7.0f; // 5.0f;
+        int n_width = 1024;
+        int n_height = 1024;
 
         std::vector<Vec3> points;
         std::vector<unsigned int> indices;
@@ -67,8 +64,8 @@ public:
             for (int i = 0; i < n_height; ++i) {
 
                 // Calculate vertex positions
-                float vertX = -f_width / 2 + j / (float)n_width * f_width;
-                float vertY = -f_height / 2 + i / (float)n_height * f_height;
+                float vertX = -size_grid_x / 2 + j / (float)n_width * size_grid_x;
+                float vertY = -size_grid_y / 2 + i / (float)n_height * size_grid_y;
                 float vertZ = 0.0f;
                 //std::cout << vertX << " " << vertY << std::endl;
                 points.push_back(Vec3(vertX, vertY, vertZ));
@@ -108,7 +105,7 @@ public:
         terrainMesh->set_vtexcoord(texCoords);
     }
 
-    void draw(Camera camera, Vec3 clipPlaneNormal, float clipPlaneHeight, float waterHeight) {
+    void draw(Camera camera, Vec3 clipPlaneNormal, float clipPlaneHeight) {
         terrainShader->bind();
 
         // Generate and set Model
@@ -128,7 +125,8 @@ public:
         terrainShader->set_uniform("clipPlaneNormal", clipPlaneNormal);
         terrainShader->set_uniform("clipPlaneHeight", clipPlaneHeight);
         terrainShader->set_uniform("waterHeight", waterHeight);
-
+        terrainShader->set_uniform("skyColor", skyColor);
+        terrainShader->set_uniform("lightPos", lightPos);
         // Bind textures
         int i = 0;
         for (std::map<std::string, std::unique_ptr<RGBA8Texture>>::iterator it = terrainTextures.begin(); it != terrainTextures.end(); ++it) {

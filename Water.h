@@ -27,13 +27,13 @@ public:
     std::unique_ptr<RGBA8Texture> refractionTexture;
     std::unique_ptr<D16Texture> reflectionDepthTexture;
     std::unique_ptr<D16Texture> refractionDepthTexture;
-    int reflectionWidth = 1280, reflectionHeight = 720;
-    int refractionWidth = 1280, refractionHeight = 720;
+    int reflectionWidth = 640, reflectionHeight = 360;
+    int refractionWidth = 320, refractionHeight = 180;
 
     std::unique_ptr<RGBA8Texture> waterTexture;
 
 public:
-    Water(float waterHeight) {
+    Water(float size_grid_x, float size_grid_y, float waterHeight) {
         waterShader = std::unique_ptr<Shader>(new Shader());
         waterShader->verbose = true;
         waterShader->add_vshader_from_source(water_vshader);
@@ -43,18 +43,15 @@ public:
         // Generate a flat mesh for the terrain with given dimensions, using triangle strips
         waterMesh = std::unique_ptr<GPUMesh>(new GPUMesh());
 
-        // Grid dimensions (centered at (0, 0))
-        float f_width = 7.0f;
-        float f_height = 7.0f;
-
         std::vector<Vec3> points;
         std::vector<unsigned int> indices = {0, 2, 1, 2, 3, 1};
         std::vector<Vec2> texCoords;
 
         // values so that the corners are (x, y) (-x, y), (x, -y), (-x, -y)
         // we translate the water height in the shader itself... so we need a z=0 quad...
-        float x = f_width / 2;
-        float y = f_height / 2;
+        // we dont need the water quad to cover the whole space, we can just cover 3/4 of it...
+        float x = (3.0/4.0 * size_grid_x) / 2.0;
+        float y = (3.0/4.0 * size_grid_y) / 2.0;
         points.push_back(Vec3(-x, -y, waterHeight)); texCoords.push_back(Vec2(0, 0));
         points.push_back(Vec3(-x, y, waterHeight)); texCoords.push_back(Vec2(0, 1));
         points.push_back(Vec3(x, -y, waterHeight)); texCoords.push_back(Vec2(1, 0));
@@ -115,11 +112,6 @@ public:
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     }
 
-    //~Water() {
-    //    std::cout << "water clean up" << std::endl;
-    //    reflectionFBO->cleanUp();
-    //    refractionFBO->cleanUp();
-    //}
 
     void draw(Camera camera, float time) {
         waterShader->bind();

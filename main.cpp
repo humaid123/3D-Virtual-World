@@ -24,11 +24,19 @@ int main(int, char**){
     glEnable(GL_DEPTH_TEST);
 
 
-    Terrain terrain;
-    Skybox skybox;
-    float waterHeight = 0.7f;
-    Water water(waterHeight);
+    float waterHeight = 0.5f;
+    Vec3 skyColor = Vec3(0.6, 0.7, 0.8);
+    Vec3 lightPos = Vec3(10.0f, 10.0f, 10.0f);
+    float size_grid_x = 20, size_grid_y = 20; // instead of creating a  grid from -1 to 1 => we create a grid from -10 to 10 which allows spacing out noise
+
+
+    Skybox skybox(skyColor);
+    Water water(size_grid_x, size_grid_y, waterHeight);
+    Terrain terrain(size_grid_x, size_grid_y, waterHeight, skyColor, lightPos);
+
     Camera camera(width, height);
+
+
 
     // clipping plane => required when shading reflection and refraction FBO
     Vec3 clipPlaneNormal = Vec3(0, 0, -1); // Vec3(0, -1, 0);
@@ -53,7 +61,7 @@ int main(int, char**){
         camera.invertPitch();
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         skybox.draw(camera, time);
-        terrain.draw(camera, reflectionClipPlaneNormal, reflectionClipPlaneHeight, waterHeight);
+        terrain.draw(camera, reflectionClipPlaneNormal, reflectionClipPlaneHeight);
         water.reflectionFBO->unbind();
         camera.cameraPos.z() += distance;
         camera.invertPitch();
@@ -62,13 +70,13 @@ int main(int, char**){
         glViewport(0, 0, water.refractionWidth, water.refractionHeight);
         water.refractionFBO->bind();
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        terrain.draw(camera, refractionClipPlaneNormal, refractionClipPlaneHeight, waterHeight);
+        terrain.draw(camera, refractionClipPlaneNormal, refractionClipPlaneHeight);
         water.refractionFBO->unbind();
 
         // actual drawing
         glViewport(0, 0, width, height);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        terrain.draw(camera, clipPlaneNormal, clipPlaneHeight, waterHeight);
+        terrain.draw(camera, clipPlaneNormal, clipPlaneHeight);
         skybox.draw(camera, time);
         water.draw(camera, time);
 

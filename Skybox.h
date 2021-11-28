@@ -61,15 +61,16 @@ public:
 	GLuint skyboxTexture;
 
 	std::unique_ptr<RGBA8Texture> cloudTexture;
+	Vec3 skyColor;
 
 public:
-	Skybox() {
+	Skybox(Vec3 _skyColor) {
 		skyboxShader = std::unique_ptr<Shader>(new Shader());
 		skyboxShader->verbose = true;
 		skyboxShader->add_vshader_from_source(skybox_vshader);
 		skyboxShader->add_fshader_from_source(skybox_fshader);
 		skyboxShader->link();
-
+		skyColor = _skyColor;
 
 
 		// Load skybox textures
@@ -161,6 +162,8 @@ public:
 		glActiveTexture(GL_TEXTURE1);
 		cloudTexture->bind();
 		skyboxShader->set_uniform("cloudTexture", 1);
+
+		skyboxShader->set_uniform("baseSkyColor", skyColor);
 
 		// glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
 		// glBindVertexArray(0);

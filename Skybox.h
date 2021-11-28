@@ -60,6 +60,7 @@ public:
 	std::unique_ptr<GPUMesh> skyboxMesh;
 	GLuint skyboxTexture;
 
+	std::unique_ptr<RGBA8Texture> cloudTexture;
 
 public:
 	Skybox() {
@@ -106,7 +107,14 @@ public:
 			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGBA, tex_wh, tex_wh, 0, GL_RGBA, GL_UNSIGNED_BYTE, &image[0]);
 		}
 
-
+		std::string name = "cloud.png";
+		loadTexture(cloudTexture, name.c_str());
+		cloudTexture->bind();
+		glGenerateMipmap(GL_TEXTURE_2D);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
 
 
@@ -117,7 +125,7 @@ public:
 		std::cout << "skybox fully loaded\n" << std::endl;
 	}
 
-	void draw(Camera camera) {
+	void draw(Camera camera, float time) {
 		// Since the cubemap will always have a depth of 1.0, we need that equal sign so it doesn't get discarded
 		
 		glDepthFunc(GL_LEQUAL);
@@ -137,6 +145,7 @@ public:
 		skyboxShader->set_uniform("view", camera.viewMatrix());
 		skyboxShader->set_uniform("projection", camera.projectionMatrix());
 		skyboxShader->set_uniform("viewPos", camera.cameraPos);
+		skyboxShader->set_uniform("time", time);
 
 
 		// // Draws the cubemap as the last object so we can save a bit of performance by discarding all fragments
@@ -147,6 +156,11 @@ public:
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTexture);
 		skyboxShader->set_uniform("noiseTex", 0);
+
+
+		glActiveTexture(GL_TEXTURE1);
+		cloudTexture->bind();
+		skyboxShader->set_uniform("cloudTexture", 1);
 
 		// glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
 		// glBindVertexArray(0);

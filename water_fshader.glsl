@@ -34,11 +34,10 @@ vec4 blur(sampler2D sampler, vec2 uv) {
 void main() {  
 
     // we get the water color with a displacement
-    //vec2 waterUV = texture(waterTexture, vec2(uv.x + (1 + sin(time/10)), uv.y)).rg * 0.01f;
-    //waterUV = uv + vec2(waterUV.x, waterUV.y + (1 + sin(time/10)));
-    vec2 waterUV = uv + vec2(0.1 * (1 + sin(time/5)), 0.2 * (1 + sin(time/10)));
-    //waterUV = clamp(waterUV, 0.001, 0.999);
-    vec4 waterColour = texture(waterTexture, waterUV);
+    vec2 waterUV1 = uv + vec2(0.1 * (1 + sin(time/5)), 0.2 * (1 + sin(time/10)));
+    vec2 waterUV2 = uv + vec2(0.05 * (1 + sin(time/2)), 0.1 * (1 + sin(time/5)));
+    vec2 waterUV3 = uv + vec2(0.03 * (1 + sin(time)), 0.05 * (1 + sin(time/2)));
+    vec4 waterColour = 0.5 * texture(waterTexture, waterUV1) + 0.3 * texture(waterTexture, waterUV2) + 0.2 * texture(waterTexture, waterUV3);
 
     // normalised device coordinates to properly => we get the screen space coordinates Not the (nx, ny) one but the (-1, 1) ones
     vec2 ndc = clipSpaceCoordinates.xy/clipSpaceCoordinates.w;
@@ -46,10 +45,7 @@ void main() {
     vec2 ndc_uv = ndc / 2.0 + 0.5;
     
     // we invert the coordinates to sample for the reflection
-    vec2 reflectionUV = vec2(ndc_uv.x, 1.0-ndc_uv.y);
-    //reflectionUV += 0.1 * vec2(sin((1-ndc_uv.y)*time/10), cos((ndc_uv.x)*time/10));
-    //reflectionUV = clamp(reflectionUV, 0.001, 0.999);
-    
+    vec2 reflectionUV = vec2(ndc_uv.x, 1.0-ndc_uv.y);    
     vec2 refractionUV = vec2(ndc_uv.x, ndc_uv.y); // no need to change y
 
     // vec4 reflectColour = texture(reflectionTexture, reflectionUV);
@@ -58,7 +54,7 @@ void main() {
     // vec4 refractColour = texture(refractionTexture, refractionUV);
     vec4 refractColour = blur(refractionTexture, refractionUV);
 
-    FragColor = mix(reflectColour, refractColour, 0.3); // more reflection, the smaller the number
-    FragColor = mix(FragColor, waterColour, 0.4); // add a blue tint
+    FragColor = mix(reflectColour, refractColour, 0.4); // more reflection, the smaller the number
+    FragColor = mix(FragColor, waterColour, 0.5); // add a blue tint
 }
 )"

@@ -115,7 +115,6 @@ public:
     }
 
     Mat4x4 viewMatrix() {
-
         Vec3 look = cameraFront + cameraPos;
         Mat4x4 V = lookAt(cameraPos, look, cameraUp);
         return V;

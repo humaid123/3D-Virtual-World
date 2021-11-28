@@ -1,0 +1,10 @@
+Yaw
+
+If yaw = 0° and the camera is looking to the ground (i.e. nadir), it means that the top of the image points to the north.
+If yaw = 90° and the camera is looking nadir, it means that the top of the image points to the east.
+If yaw = 270° and the camera is looking nadir, it means that the top of the image points to the west.
+Pitch
+
+If pitch = 0°, it means that the camera is looking down (i.e. nadir).
+If pitch = 90°, it means that the camera is looking forward.
+Roll

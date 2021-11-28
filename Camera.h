@@ -3,78 +3,64 @@
 
 #include <OpenGP/GL/Application.h>
 #include "OpenGP/GL/Eigen.h"
+#include <math.h>
+
 using namespace OpenGP;
-constexpr float PI = 3.14159265359f;
 
 class Camera {
 public:
-Vec3 cameraPos;
-Vec3 cameraFront;
-Vec3 cameraUp;
-float fov;
-float speed;
-float speedIncrement;
-float halflife;
-Vec3 displacement;
+    Vec3 cameraPos, cameraFront, cameraUp;
 
-float yaw;
-float pitch;
-float width, height;
+    float fov, speed;
+    const float speedIncrement = 0.005f, mouseSensitivity = 0.005f;
+
+    // used for typical mouse control
+    // yaw controls the side movement, yaw = 0 means we are looking forward, yaw = 90 means we are looking east, yaw = 270 means we are looking west
+    // pitch controls the up-down movement pitch = 0 means we are looking forward, pitch = 90 means we are looking up, pitch = 270 means we are looking down
+    float yaw, pitch;
+
+    float nearPlane =0.1f, farPlane = 60.0f, aspectRatio;
 public:
     Camera(int _width, int _height) {
-        // Initialize camera position and direction
         cameraPos = Vec3(0.0f, 0.0f, 3.0f);
         cameraFront = Vec3(0.0f, -1.0f, 0.0f);
         cameraUp = Vec3(0.0f, 0.0f, 1.0f);
-
-        // Initialize FOV and camera speed
         fov = 80.0f;
         speed = 0.01f;
-        speedIncrement = 0.002f;
-
-        // Initialize yaw (left/right) and pitch (up/down) angles
         yaw = 0.0f;
         pitch = 0.0f;
-
-        width = _width;
-        height = _height;
+        aspectRatio = (float)_width / (float) _height;
     }
 
     void updateYawAndPitch(Vec2 delta) {
         delta[1] = -delta[1];
-        float sensitivity = 0.005f;
-        delta = sensitivity * delta;
+        delta = mouseSensitivity * delta;
 
         yaw += delta[0];
         pitch += delta[1];
 
-        if(pitch > PI/2.0f - 0.01f)  pitch =  PI/2.0f - 0.01f;
-        if(pitch <  -PI/2.0f + 0.01f) pitch =  -PI/2.0f + 0.01f;
+        if(pitch > M_PI/2.0f - 0.01f)  pitch =  M_PI/2.0f - 0.01f;
+        if(pitch <  -M_PI/2.0f + 0.01f) pitch =  -M_PI/2.0f + 0.01f;
 
-        Vec3 front(0, 0, 0);
-        front[0] = sin(yaw) * cos(pitch);
-        front[1] = cos(yaw) * cos(pitch);
-        front[2] = sin(pitch);
-
-        cameraFront = front.normalized();
+        cameraFront = Vec3( 
+            sin(yaw) * cos(pitch),
+            cos(yaw) * cos(pitch),
+            sin(pitch)
+        );
     }
 
     void invertPitch() {
         pitch = -pitch;
 
-        if (pitch > PI / 2.0f - 0.01f)  pitch = PI / 2.0f - 0.01f;
-        if (pitch < -PI / 2.0f + 0.01f) pitch = -PI / 2.0f + 0.01f;
-
-        Vec3 front(0, 0, 0);
-        front[0] = sin(yaw) * cos(pitch);
-        front[1] = cos(yaw) * cos(pitch);
-        front[2] = sin(pitch);
-
-        cameraFront = front.normalized();
+        cameraFront = Vec3(
+            sin(yaw) * cos(pitch),
+            cos(yaw) * cos(pitch),
+            sin(pitch)
+        );
     }
 
     void updateCamera(KeyEvent k) {
-        // Movement left, right, up and down (WASD)
+        // WASD
         if (k.key == GLFW_KEY_W) {
             cameraPos = cameraPos + speed * cameraFront.normalized();
         }
@@ -91,38 +77,31 @@ public:
             cameraPos = cameraPos + speed * cameraFront.normalized().cross(cameraUp);
         }
 
-        // Adjust FOV
+        // arrow movements => up decreases the fov, right increases the speed
         if (k.key == GLFW_KEY_UP) {
-            fov -= 1.0f;
-            if (fov <= 1.0f) fov = 1.0f;
+            fov = std::max(1.0f, fov-1.0f);
         }
 
         if (k.key == GLFW_KEY_DOWN) {
-            fov += 1.0f;
-            if (fov >= 80.0f) fov = 80.0f;
+            fov = std::min(80.0f, fov + 1);
         }
 
-        // Adjust movement speed
         if (k.key == GLFW_KEY_RIGHT) {
-            speed += speedIncrement;
-            if (speed >= 1.0f) speed = 1.0f;
+            speed = std::min(1.0f, speed + speedIncrement);
         }
 
         if (k.key == GLFW_KEY_LEFT) {
-            speed -= speedIncrement;
-            if (speed <= 0.001f) speed = 0.001f;
+            speed = std::max(0.001f, speed - speedIncrement);
         }
     }
 
     Mat4x4 viewMatrix() {
         Vec3 look = cameraFront + cameraPos;
-        Mat4x4 V = lookAt(cameraPos, look, cameraUp);
-        return V;
+        return lookAt(cameraPos, look, cameraUp);
     }
 
     Mat4x4 projectionMatrix() {
-        Mat4x4 P = perspective(fov, (float) width / (float)height, 0.1f, 60.0f);
-        return P;
+        return perspective(fov, aspectRatio, nearPlane, farPlane);
     }
 };
 

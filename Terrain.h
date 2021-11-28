@@ -6,6 +6,7 @@
 
 #include <OpenGP/GL/Application.h>
 #include "OpenGP/GL/Eigen.h"
+#include <climits>
 
 #include "Camera.h"
 
@@ -17,7 +18,8 @@ const char* terrain_fshader =
 #include "terrain_fshader.glsl"
 ;
 
-const unsigned resPrim = 999999;
+
+const unsigned indexRestart = UINT_MAX;
 
 class Terrain {
 public:
@@ -25,8 +27,7 @@ public:
     std::unique_ptr<GPUMesh> terrainMesh;
     std::map<std::string, std::unique_ptr<RGBA8Texture>> terrainTextures;
     float waterHeight;
-    Vec3 skyColor;
-    Vec3 lightPos;
+    Vec3 skyColor, lightPos;
 
     Terrain(float size_grid_x, float size_grid_y, float _waterHeight, Vec3 _skyColor, Vec3 _lightPos) 
         : waterHeight(_waterHeight), skyColor(_skyColor), lightPos(_lightPos) {
@@ -47,11 +48,9 @@ public:
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
         }
 
-
-        // Generate a flat mesh for the terrain with given dimensions, using triangle strips
         terrainMesh = std::unique_ptr<GPUMesh>(new GPUMesh());
-
-        // Grid resolution
+        // divides the plane rectangle into n_width along the width and n_height along the height to create a 
+        // displaceable grid.
         int n_width = 1024;
         int n_height = 1024;
 
@@ -59,45 +58,47 @@ public:
         std::vector<unsigned int> indices;
         std::vector<Vec2> texCoords;
 
-        // Generate vertex and texture coordinates
         for (int j = 0; j < n_width; ++j) {
             for (int i = 0; i < n_height; ++i) {
 
-                // Calculate vertex positions
+                // we create a vertices from [-size_grid_x, size_grid_x] instead of [-1, 1] => this creates a larger terrain 
+                // that we can blur to give the illusion that it is infinite
                 float vertX = -size_grid_x / 2 + j / (float)n_width * size_grid_x;
                 float vertY = -size_grid_y / 2 + i / (float)n_height * size_grid_y;
                 float vertZ = 0.0f;
-                //std::cout << vertX << " " << vertY << std::endl;
                 points.push_back(Vec3(vertX, vertY, vertZ));
 
-                // Calculate texture coordinates
+                // we place the texture coordinates so that they are between [0, 1] dependending on where they are uniformly on [0, n_width-1]
                 float texX = i / (float)(n_width - 1);
                 float texY = j / (float)(n_height - 1);
                 texCoords.push_back(Vec2(texX, texY));
             }
         }
 
-        // Generate element indices via triangle strips
+        // we need to build the grid with GL_TRIANGLE_STRIP
+        // the best way is to build each row into a strip
+        // then concatenate the strips
+        // opengl provides  glEnable(GL_PRIMITIVE_RESTART) and  glPrimitiveRestartIndex(index)
+        // such that when the given index is reached, the next primitive is built
         for(int j = 0; j < n_width - 1; ++j) {
+
             // Push two vertices at the base of each strip
             float baseX = j * n_width;
             indices.push_back(baseX);
-
             float baseY = ((j + 1) * n_width);
             indices.push_back(baseY);
 
             for(int i = 1; i < n_height; ++i) {
-
+            
                 // Calculate next two vertices
                 float tempX = i + j * n_width;
                 indices.push_back(tempX);
-
                 float tempY = i + (j + 1) * n_height;
                 indices.push_back(tempY);
             }
 
             // A new strip will begin when this index is reached
-            indices.push_back(resPrim);
+            indices.push_back(indexRestart);
         }
 
         terrainMesh->set_vbo<Vec3>("vposition", points);
@@ -111,14 +112,8 @@ public:
         // Generate and set Model
         Mat4x4 M = Mat4x4::Identity();
         terrainShader->set_uniform("M", M);
-
-        // Generate and set View
         terrainShader->set_uniform("V", camera.viewMatrix());
-
-        // Generate and set Projection
         terrainShader->set_uniform("P", camera.projectionMatrix());
-
-        // Set camera position
         terrainShader->set_uniform("viewPos", camera.cameraPos);
 
         // set clipping plane for the reflection and refraction
@@ -127,27 +122,20 @@ public:
         terrainShader->set_uniform("waterHeight", waterHeight);
         terrainShader->set_uniform("skyColor", skyColor);
         terrainShader->set_uniform("lightPos", lightPos);
-        // Bind textures
+
         int i = 0;
-        for (std::map<std::string, std::unique_ptr<RGBA8Texture>>::iterator it = terrainTextures.begin(); it != terrainTextures.end(); ++it) {
+        for (auto it = terrainTextures.begin(); it != terrainTextures.end(); ++it) {
             glActiveTexture(GL_TEXTURE1 + i);
             (it->second)->bind();
             terrainShader->set_uniform(it->first.c_str(), 1 + i);
             ++i;
         }
 
-        // Bind height texture and set uniform noiseTex
-        glActiveTexture(GL_TEXTURE0);
-        //heightTexture->bind();
-        //terrainShader->set_uniform("noiseTex", 0);
-
         // Draw terrain using triangle strips
-        //wwwwwwwwwglEnable(GL_DEPTH_TEST);
         terrainMesh->set_attributes(*terrainShader);
         terrainMesh->set_mode(GL_TRIANGLE_STRIP);
         glEnable(GL_PRIMITIVE_RESTART);
-        glPrimitiveRestartIndex(resPrim);
-
+        glPrimitiveRestartIndex(indexRestart);
         terrainMesh->draw();
 
         terrainShader->unbind();

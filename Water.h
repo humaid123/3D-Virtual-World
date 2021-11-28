@@ -116,18 +116,12 @@ public:
     void draw(Camera camera, float time) {
         waterShader->bind();
 
-        // Generate and set Model
         Mat4x4 M = Mat4x4::Identity();
         waterShader->set_uniform("M", M);
-
-        // Generate and set View
         waterShader->set_uniform("V", camera.viewMatrix());
-
-        // Generate and set Projection
         waterShader->set_uniform("P", camera.projectionMatrix());
-
-        // Set camera position
         waterShader->set_uniform("viewPos", camera.cameraPos);
+        waterShader->set_uniform("time", time);
 
         glActiveTexture(GL_TEXTURE0);
         reflectionTexture->bind();
@@ -141,15 +135,8 @@ public:
         waterTexture->bind();
         waterShader->set_uniform("waterTexture", 2);
 
-        waterShader->set_uniform("time", time);
 
-        // Draw terrain using triangle strips
-        // glEnable(GL_DEPTH_TEST);
         waterMesh->set_attributes(*waterShader);
-        //  waterMesh->set_mode(GL_TRIANGLE_STRIP);
-        // glEnable(GL_PRIMITIVE_RESTART);
-        // glPrimitiveRestartIndex(resPrim);
-
         waterMesh->draw();
 
         waterShader->unbind();

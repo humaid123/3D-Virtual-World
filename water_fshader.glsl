@@ -11,25 +11,35 @@ uniform sampler2D refractionTexture;
 uniform sampler2D waterTexture;
 uniform float time;
 
-// simple Box blur for reflection distortion
-// https://www.shadertoy.com/view/llGSz3
-vec4 blur(sampler2D sampler, vec2 uv) {
-   const float kernel = 10.0;
-   const float weight = 1.0;
+vec3 permute(vec3 x) { return mod(((x*34.0)+1.0)*x, 289.0); }
 
-   vec2 resolution = vec2(1280, 720); // resolution of image
-   vec3 sum = vec3(0);
-   float pixelSize = 1.0 / resolution.x;
-
-   vec3 accumulation = vec3(0);
-   vec3 weightSum = vec3(0);
-   for (float i = -kernel; i<=kernel; i++) {
-        accumulation += texture(sampler, uv + vec2(i * pixelSize, 0.0)).xyz * weight;
-        weightSum += weight;
-   }
-   sum = accumulation / weightSum;
-   return vec4(sum, 1.0);
+float snoise(vec2 v){
+    const vec4 C = vec4(0.211324865405187, 0.366025403784439,
+           -0.577350269189626, 0.024390243902439);
+    vec2 i  = floor(v + dot(v, C.yy) );
+    vec2 x0 = v -   i + dot(i, C.xx);
+    vec2 i1;
+    i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+    vec4 x12 = x0.xyxy + C.xxzz;
+    x12.xy -= i1;
+    i = mod(i, 289.0);
+    vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 ))
+    + i.x + vec3(0.0, i1.x, 1.0 ));
+    vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy),
+    dot(x12.zw,x12.zw)), 0.0);
+    m = m*m ;
+    m = m*m ;
+    vec3 x = 2.0 * fract(p * C.www) - 1.0;
+    vec3 h = abs(x) - 0.5;
+    vec3 ox = floor(x + 0.5);
+    vec3 a0 = x - ox;
+    m *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );
+    vec3 g;
+    g.x  = a0.x  * x0.x  + h.x  * x0.y;
+    g.yz = a0.yz * x12.xz + h.yz * x12.yw;
+    return 130.0 * dot(m, g);
 }
+
 
 void main() {  
 
@@ -48,11 +58,12 @@ void main() {
     vec2 reflectionUV = vec2(ndc_uv.x, 1.0-ndc_uv.y);    
     vec2 refractionUV = vec2(ndc_uv.x, ndc_uv.y); // no need to change y
 
-    // vec4 reflectColour = texture(reflectionTexture, reflectionUV);
-    vec4 reflectColour = blur(reflectionTexture, reflectionUV);
+    vec4 reflectColour = texture(reflectionTexture, vec2(
+        reflectionUV.x + 0.01*snoise(vec2(reflectionUV.x, time/2)), 
+        reflectionUV.y + 0.02*snoise(vec2(time/5, reflectionUV.y))
+    ));
     
-    // vec4 refractColour = texture(refractionTexture, refractionUV);
-    vec4 refractColour = blur(refractionTexture, refractionUV);
+    vec4 refractColour = texture(refractionTexture, refractionUV);
 
     FragColor = mix(reflectColour, refractColour, 0.3); // more reflection, the smaller the number
     FragColor = mix(FragColor, waterColour, 0.5); // add displacement based on the layered periodic coordinates

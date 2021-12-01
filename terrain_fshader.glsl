@@ -20,94 +20,90 @@ in vec3 distanceFromCamera;
 
 out vec4 color;
 
+vec4 mixBetweenLevels(vec4 col_middle, float height, vec4 col_lower, float height_lower, vec4 col_higher, float height_higher) {
+    float halfDistance = (height_higher - height_lower) / 2.0f;
+    if (height < (height_lower + halfDistance)) {
+        float pos = height - height_lower;
+        float posScaled = pos/halfDistance;
+        return col_middle * posScaled + col_lower * (1 - posScaled);
+    } else {
+        float pos = height_higher - height;
+        float posScaled = pos/halfDistance;
+        return col_middle * posScaled + col_higher * (1 - posScaled);
+    }
+}
+
 vec4 mixWithGrassAndSnow(sampler2D base, vec2 uv, float height, float slope) {
     float mixWithGrassLevel = 1.5f;
     float mixWithSnowLevel = mixWithGrassLevel + 2.0f;
 
     vec4 with_grass = mix(texture(base, uv), texture(grass, uv), slope);
     vec4 with_snow = mix(texture(base, uv), texture(snow, uv), slope);
-    if (height < mixWithGrassLevel) {
-        vec4 res = mix(with_grass, with_snow, (mixWithGrassLevel - height) / (mixWithGrassLevel));
-        res = vec4(res.xyz, 1.0f); // grass has low specular power
-        return res;
-    } else if (abs(height - mixWithGrassLevel) < 0.1f) {
-        vec4 res = mix(with_grass, with_snow, 0.5f);
-        return res;
-    } else { 
-        vec4 res = mix(with_grass, with_snow, (mixWithSnowLevel - height) / (mixWithSnowLevel));
-        return res;
-    }
+    vec4 col = texture(base, uv);
+
+    // we have to mix between levels here again as otherwise we get a line here also...
+    return mixBetweenLevels(col, height, with_grass, mixWithGrassLevel,  with_snow, mixWithSnowLevel);
 }
 
 
 void main() {
+
     /*
-    what I want is
-        sand, rock, snow/rock mixture
-
-        however we define a level 
-            water, grass, snow
-        such that at each of these level, we mix with these colours based on the slope
-
-        this way we get as if snow/grass was depsited on the surface
+    the shading is as such:
+        we have a pure snow level, followed by a rock, grass, sand and pure sand level
+        To make the rock, grass, sand levels in the middle 'impure', I mix them with the snow and the 
+        grass texture based on a seperate heights - see mixWithGrassAndSnowFunction => this looks like deposits 
+        on the terrain.
     */
 
-    float pureSandLevel = waterHeight + 0.01f; // beach
-    float sandLevel = pureSandLevel + 0.2f; //sand with some grass ot snow
-    float grassLevel = sandLevel + 0.15f;
-    float rockLevel = grassLevel + 1.8f; // rock with some grass or snow
-    float snowLevel = rockLevel + 1.0f;
+    float pureSandLevel = waterHeight + 0.01f; // beach around the water => pure sand
+    float sandLevel = pureSandLevel + 0.15f;   // sand with some grass or snow
+    float grassLevel = sandLevel + 0.25f;      // grass with some grass or snow (preferably snow for some 'snowy grass')
+    float rockLevel = grassLevel + 1.8f;       // rock with some grass or snow
+    float snowLevel = rockLevel + 0.5f;        // pure snow
 
-    // go from top to bottom so that the code is simple if-statements after if-statements
-    // the top level is a mixture of snow and rock
-    vec4 col = mix(texture(snow, uv), texture(rock, uv), slope); // color at the top is the default, we change if height is too low
-    vec4 col_below = texture(rock, uv); // used to mix with the level below it
-    col = mix(col, col_below, (snowLevel - height) / (snowLevel));
+    vec4 col;
 
-    // mixture of rock and grass => also add snow/more grass based on the slope
-    if (height < rockLevel) {
-        // we add some changes such as slope/10.0f and mix -0.1f so as to prefer the rock texture over the other textures
-        col = mixWithGrassAndSnow(rock, uv, height, slope/10.0f);
-        col_below = mixWithGrassAndSnow(grass, uv, height, slope);
-        col = mix(col, col_below, (rockLevel - height) / (rockLevel) -0.1f);
+    vec4 pureSnowCol = texture(snow, uv);
+    vec4 rockCol = mixWithGrassAndSnow(rock, uv, height, slope/10.0f);
+    vec4 grassCol = mixWithGrassAndSnow(grass, uv, height, slope);
+    vec4 sandCol = mixWithGrassAndSnow(sand, uv, height, slope);
+    vec4 pureSandCol = texture(sand, uv);
+
+    // Blinn-Phong constants are placed here so we can update them at each level
+    float ka = 0.05f, kd = 1.2f, ks = 0.7f, p = 0.8f;
+    
+    if (height > snowLevel) {
+        col = pureSnowCol;
+        kd = 10.0f;
+    } else if (height >= grassLevel && height <= snowLevel) {
+        // rock but blend with grass below and snow above
+        col = mixBetweenLevels(rockCol, height, grassCol, grassLevel, pureSnowCol, snowLevel);
+    } else if (height >= sandLevel && height <= rockLevel) {
+        // texture with grass but blend with rock above and blend with sand below
+        col = mixBetweenLevels(grassCol, height, sandCol, sandLevel, rockCol, rockLevel);
+    } else if (height >= pureSandLevel && height <= grassLevel) {
+        // texture with sand but blend with grass above and blend with pureSand below
+        col = mixBetweenLevels(sandCol, height, pureSandCol, pureSandLevel, grassCol, grassLevel);
+    } else { 
+        // height <= pureSandLevel
+        col = pureSandCol;
     }
 
-    if (height < grassLevel) {
-        col = mixWithGrassAndSnow(grass, uv, height, slope);
-        col_below = mixWithGrassAndSnow(sand, uv, height, slope);
-        col = mix(col, col_below, (grassLevel - height) / (grassLevel));
-    }
-
-    if (height < sandLevel) {
-        col = mixWithGrassAndSnow(sand, uv, height, slope);
-        col_below = texture(sand, uv);
-        col = mix(col, col_below, (sandLevel - height) / (sandLevel));
-    }
-
-    // we have a beach level near the water
-    if (height < pureSandLevel) {
-        col = texture(sand, uv);
-    }
-
-    // Blinn-Phong
-    float ka = 0.05f;
-    float kd = 1.2f;
-    float ks = 0.7f;
-    float p = 0.8f;
-
-    // diffuse lighting
+    // Blinn-Phong calculation
     vec3 lightDir = normalize(lightPos - fragPos);
     float diffuse = kd * max(0.0f, -dot(normal, lightDir));
 
-    // specular lighting
     vec3 viewDirection = viewPos - fragPos;
     vec3 halfway = normalize(lightDir + viewDirection);
     float specular = ks * max(0.0f, pow(dot(normal, halfway), p));
 
+    // I use the skyColor as the ambient color to make the fog look better.
     col = ka*vec4(skyColor, 1.0f) + diffuse*col + specular*col;
-  
-    // we now mix the color with the skycolor based on the distance from the camera
-    // we use the visibility formula to detect how far an object is from the camera
+
+    // visibility calculation => add fog so that we can hide 'render distance'  
+    // we mix the color with the skycolor based on the distance from the camera
+    // we use a visibility formula to detect how far an object is from the camera
     // 1 => render normaly, 0 => fade into the skycolor
     // visibility takes the distance from the camera and use an exponential decrease so that the fog scaling looks more natural
     // visibility = exp(-pow(distance * density, gradient)) is such a formula

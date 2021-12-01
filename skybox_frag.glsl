@@ -9,108 +9,6 @@ uniform sampler2D cloudTexture;
 uniform float time;
 uniform vec3 baseSkyColor;
 
-// worley noise => https://www.shadertoy.com/view/lscyzl
-// Permutation polynomial: (34x^2 + x) mod 289
-vec4 Permute( vec4 x )
-{
- return mod( ( 34.0 * x + 1.0 ) * x, 289.0 );   
-}
-
-// Cellular noise, returning F1 and F2 in a vec2.
-// Speeded up by using 2x2 search window instead of 3x3,
-// at the expense of some strong pattern artifacts.
-// F2 is often wrong and has sharp discontinuities.
-// If you need a smooth F2, use the slower 3x3 version.
-// F1 is sometimes wrong, too, but OK for most purposes.
-vec2 Cellular2x2( vec2 P )
-{
-	#define K 0.142857142857 // 1/7
-	#define K2 0.0714285714285 // K/2
-	#define jitter 0.8 // jitter 1.0 makes F1 wrong more often
-    
-	vec2 Pi = mod( floor( P ), 289.0);
- 	vec2 Pf = fract(P);
-	vec4 Pfx = Pf.x + vec4( -0.5, -1.5, -0.5, -1.5 );
-	vec4 Pfy = Pf.y + vec4( -0.5, -0.5, -1.5, -1.5 );
-	vec4 p = Permute( Pi.x + vec4(0.0, 1.0, 0.0, 1.0 ) );
-	p = Permute( p + Pi.y + vec4( 0.0, 0.0, 1.0, 1.0 ) );
-    
-	vec4 ox = mod(p, 7.0)*K+K2;
-	vec4 oy = mod(floor(p*K),7.0)*K+K2;
-	vec4 dx = Pfx + jitter*ox;
-	vec4 dy = Pfy + jitter*oy;
-	vec4 d = dx * dx + dy * dy; // d11, d12, d21 and d22, squared
-    
-	// Sort out the two smallest distances
-#if 0
-	// Cheat and pick only F1
-	d.xy = min(d.xy, d.zw);
-	d.x = min(d.x, d.y);
-	return d.xx; // F1 duplicated, F2 not computed
-#else
-	// Do it right and find both F1 and F2
-	d.xy = (d.x < d.y) ? d.xy : d.yx; // Swap if smaller
-	d.xz = (d.x < d.z) ? d.xz : d.zx;
-	d.xw = (d.x < d.w) ? d.xw : d.wx;
-	d.y = min(d.y, d.z);
-	d.y = min(d.y, d.w);
-	return sqrt(d.xy);
-#endif
-}
-
-float r(float n)
-{
- 	return fract(cos(n*89.42)*343.42);
-}
-vec2 r(vec2 n)
-{
- 	return vec2(r(n.x*23.62-300.0+n.y*34.35),r(n.x*45.13+256.0+n.y*38.89)); 
-}
-
-float Worley2(vec2 n,float s)
-{
-    n /= s;
-    float dis = 1.0;
-    for(int x = -1;x<=1;x++)
-    {
-        for(int y = -1;y<=1;y++)
-        {
-            vec2 p = floor(n)+vec2(x,y);
-            p = r(p)+vec2(x,y)-fract(n);
-            dis = min(dis, dot(p, p));
-            
-        }
-    }
-    return 1.0 - sqrt(dis);
-	
-}
-
-float Worley(vec2 uv)
-{
-    // User Noise Adjust
-    return 1.0 - Cellular2x2(uv).x;
-    //return smoothstep(1.0, 0.0, Cellular2x2(uv).x);
-}
-
-float WorleyFBM(vec2 uv)
-{
-	float amplitude = 0.5;
-    float gain = 0.5;
-    float lacunarity = 2.0;
-    
-    float value = 0.0;
-    
-    const int STEPS = 4;
-    for(int i = 0; i < STEPS; i++)
-    {
-     	value += Worley2(uv, 2.0) * amplitude;
-        amplitude *= gain;
-        uv *= lacunarity;
-    }
-    
-    return value;
-}
-
 // ============================ trial with Perlin4D
 float Perlin4D( vec4 P )
 {
@@ -208,23 +106,18 @@ float fbm(vec4 uv) {
 }
 
 void main() {    
-    // FragColor = texture(skybox, texCoords);
-    // FragColor = vec4(1-WorleyFBM(texCoords.xy), 1-WorleyFBM(texCoords.yz), 1-WorleyFBM(texCoords.xz), 1.0f);
-    // float noise = Perlin4D(vec4(2 * texCoords, time/20));
     float noise = fbm(0.5 * vec4(2*texCoords, time/2));
-    // FragColor = vec4(noise, noise, noise, 1.0f);
     vec4 skyColor = 0.4 * texture(skybox, texCoords) + 0.6*vec4(baseSkyColor, 1.0); // make more blueish than actual texture
     
-    // use homogenous coordinates for the reduction
+    // use homogenous coordinates for the reduction to texture the clouds
     vec4 cloudColor = 0.5 * texture(cloudTexture, texCoords.xy/texCoords.z) + 0.5 * vec4(1, 1, 1, 1.0); // make whiter than the actual texture 
 
     if (noise > 0. && noise <= 0.15) {
-        // mix to get seemless transition
-        float scale = 1 - (noise / 0.15);
-        FragColor = scale * skyColor + (1-scale) * cloudColor; 
+        // mix to get seemless transition between background sky and the cloud at the edges of the clouds
+        float scale = (noise / 0.15);
+        FragColor = (1-scale) * skyColor + scale * cloudColor; 
     } else if (noise > 0.15) {
-        // dimensionality reduction is done by homogenouse coordinates
-        float scale = (noise / 0.1);
+        // show the cloud texture if greater than the offset.
         FragColor = cloudColor; 
     } else {
         FragColor = skyColor;

@@ -83,7 +83,7 @@ public:
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-		// load CUBE_MAP textures => the string name array alread y have them correctly sorted
+		// load CUBE_MAP textures => the string name array already have them correctly sorted
 		int tex_wh = 1024;
 		for (int i = 0; i < 6; ++i) {
 			std::vector<unsigned char> image;

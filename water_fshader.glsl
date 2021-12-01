@@ -44,10 +44,11 @@ float snoise(vec2 v){
 void main() {  
 
     // we get the water color with a displacement
-    vec2 waterUV1 = uv + vec2(0.1 * (1 + sin(time/5)), 0.2 * (1 + sin(time/10)));
-    vec2 waterUV2 = uv + vec2(0.05 * (1 + sin(time/2)), 0.1 * (1 + sin(time/5)));
-    vec2 waterUV3 = uv + vec2(0.03 * (1 + sin(time)), 0.05 * (1 + sin(time/2)));
-    vec4 waterColour = 0.5 * texture(waterTexture, waterUV1) + 0.3 * texture(waterTexture, waterUV2) + 0.2 * texture(waterTexture, waterUV3);
+    // by adding several displaced version of the water texture, it appears as if it is moving
+    vec2 waterUV1 = uv + vec2(0.2 * (1 + sin(time/5)), 0.2 * (1 + sin(time/10)));
+    vec2 waterUV2 = uv + vec2(0.1 * (1 + sin(time/2)), 0.1 * (1 + sin(time/5)));
+    vec2 waterUV3 = uv + vec2(0.05 * (1 + sin(time)), 0.05 * (1 + sin(time/2)));
+    vec4 waterColor = 0.5 * texture(waterTexture, waterUV1) + 0.3 * texture(waterTexture, waterUV2) + 0.2 * texture(waterTexture, waterUV3);
 
     // normalised device coordinates to properly => we get the screen space coordinates Not the (nx, ny) one but the (-1, 1) ones
     vec2 ndc = clipSpaceCoordinates.xy/clipSpaceCoordinates.w;
@@ -55,18 +56,19 @@ void main() {
     vec2 ndc_uv = ndc / 2.0 + 0.5;
     
     // we invert the coordinates to sample for the reflection
-    vec2 reflectionUV = vec2(ndc_uv.x, 1.0-ndc_uv.y);    
+    vec2 reflectionUV = vec2(ndc_uv.x, 1.0-ndc_uv.y);   // need to change y as inverted (opengl coordinate system problems)
     vec2 refractionUV = vec2(ndc_uv.x, ndc_uv.y); // no need to change y
 
-    vec4 reflectColour = texture(reflectionTexture, vec2(
-        reflectionUV.x + 0.01*snoise(vec2(reflectionUV.x, time/2)), 
-        reflectionUV.y + 0.02*snoise(vec2(time/5, reflectionUV.y))
+    // displace the reflection based on time and a simplex noise
+    vec4 reflectColor = texture(reflectionTexture, vec2(
+        reflectionUV.x + 0.01*snoise(vec2(reflectionUV.x, time/3)), 
+        reflectionUV.y + 0.01*snoise(vec2(time/3, reflectionUV.y))
     ));
     
-    vec4 refractColour = texture(refractionTexture, refractionUV);
+    vec4 refractColor = texture(refractionTexture, refractionUV);
 
-    FragColor = mix(reflectColour, refractColour, 0.3); // more reflection, the smaller the number
-    FragColor = mix(FragColor, waterColour, 0.2); // add displacement based on the layered periodic coordinates
+    FragColor = mix(reflectColor, refractColor, 0.3); // more reflection, the smaller the number
+    FragColor = mix(FragColor, waterColor, 0.2); // add displacement based on the layered periodic coordinates
     FragColor = mix(FragColor, vec4(0.0, 0.1, 0.2, 1.0), 0.2); // add a bluish color
 }
 )"

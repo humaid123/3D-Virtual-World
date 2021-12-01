@@ -50,10 +50,12 @@ public:
 
         terrainMesh = std::unique_ptr<GPUMesh>(new GPUMesh());
         // divides the plane rectangle into n_width along the width and n_height along the height to create a 
-        // displaceable grid.
+        // displaceable grid. A higher resolution here leads to better textures at the expense of computational speed
         int n_width =  1024;
         int n_height = 1024;
 
+        // texture coordinates are calculated as per the positions so that we can move the tile
+        // to get an infinite world.
         std::vector<Vec3> points;
         std::vector<unsigned int> indices;
 
@@ -74,16 +76,12 @@ public:
         // opengl provides  glEnable(GL_PRIMITIVE_RESTART) and  glPrimitiveRestartIndex(index)
         // such that when the given index is reached, the next primitive is built
         for(int j = 0; j < n_width - 1; ++j) {
-
-            // Push two vertices at the base of each strip
             float baseX = j * n_width;
             indices.push_back(baseX);
             float baseY = ((j + 1) * n_width);
             indices.push_back(baseY);
 
             for(int i = 1; i < n_height; ++i) {
-            
-                // Calculate next two vertices
                 float tempX = i + j * n_width;
                 indices.push_back(tempX);
                 float tempY = i + (j + 1) * n_height;
@@ -101,7 +99,6 @@ public:
     void draw(Camera camera, Vec3 clipPlaneNormal, float clipPlaneHeight) {
         terrainShader->bind();
 
-        // Generate and set Model
         Mat4x4 M = Mat4x4::Identity();
         terrainShader->set_uniform("M", M);
         terrainShader->set_uniform("V", camera.viewMatrix());
@@ -117,9 +114,9 @@ public:
 
         int i = 0;
         for (auto it = terrainTextures.begin(); it != terrainTextures.end(); ++it) {
-            glActiveTexture(GL_TEXTURE1 + i);
+            glActiveTexture(GL_TEXTURE0 + i);
             (it->second)->bind();
-            terrainShader->set_uniform(it->first.c_str(), 1 + i);
+            terrainShader->set_uniform(it->first.c_str(), i);
             ++i;
         }
 

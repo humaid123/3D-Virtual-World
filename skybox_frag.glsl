@@ -9,9 +9,7 @@ uniform sampler2D cloudTexture;
 uniform float time;
 uniform vec3 baseSkyColor;
 
-// ============================ trial with Perlin4D
-float Perlin4D( vec4 P )
-{
+float Perlin4D( vec4 P ) {
     //  https://github.com/BrianSharpe/Wombat/blob/master/Perlin4D.glsl
 
     // establish our grid cell and unit position

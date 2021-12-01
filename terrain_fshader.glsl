@@ -59,7 +59,7 @@ void main() {
     float pureSandLevel = waterHeight + 0.01f; // beach around the water => pure sand
     float sandLevel = pureSandLevel + 0.15f;   // sand with some grass or snow
     float grassLevel = sandLevel + 0.25f;      // grass with some grass or snow (preferably snow for some 'snowy grass')
-    float rockLevel = grassLevel + 1.8f;       // rock with some grass or snow
+    float rockLevel = grassLevel + 1.6f;       // rock with some grass or snow
     float snowLevel = rockLevel + 0.5f;        // pure snow
 
     vec4 col;

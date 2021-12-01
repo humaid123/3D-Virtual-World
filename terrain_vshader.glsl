@@ -19,45 +19,35 @@ out float height;
 out float slope;
 out vec3 distanceFromCamera;
 
-//	Classic Perlin 2D Noise 
-//	by Stefan Gustavson
-//
-vec2 fade(vec2 t) {return t*t*t*(t*(t*6.0-15.0)+10.0);}
-vec4 permute(vec4 x) { return mod(((x*34.0)+1.0)*x, 289.0); }
 
-float cnoise(vec2 P){
-    vec4 Pi = floor(P.xyxy) + vec4(0.0, 0.0, 1.0, 1.0);
-    vec4 Pf = fract(P.xyxy) - vec4(0.0, 0.0, 1.0, 1.0);
-    Pi = mod(Pi, 289.0); // To avoid truncation effects in permutation
-    vec4 ix = Pi.xzxz;
-    vec4 iy = Pi.yyww;
-    vec4 fx = Pf.xzxz;
-    vec4 fy = Pf.yyww;
-    vec4 i = permute(permute(ix) + iy);
-    vec4 gx = 2.0 * fract(i * 0.0243902439) - 1.0; // 1/41 = 0.024...
-    vec4 gy = abs(gx) - 0.5;
-    vec4 tx = floor(gx + 0.5);
-    gx = gx - tx;
-    vec2 g00 = vec2(gx.x,gy.x);
-    vec2 g10 = vec2(gx.y,gy.y);
-    vec2 g01 = vec2(gx.z,gy.z);
-    vec2 g11 = vec2(gx.w,gy.w);
-    vec4 norm = 1.79284291400159 - 0.85373472095314 * 
-        vec4(dot(g00, g00), dot(g01, g01), dot(g10, g10), dot(g11, g11));
-    g00 *= norm.x;
-    g01 *= norm.y;
-    g10 *= norm.z;
-    g11 *= norm.w;
-    float n00 = dot(g00, vec2(fx.x, fy.x));
-    float n10 = dot(g10, vec2(fx.y, fy.y));
-    float n01 = dot(g01, vec2(fx.z, fy.z));
-    float n11 = dot(g11, vec2(fx.w, fy.w));
-    vec2 fade_xy = fade(Pf.xy);
-    vec2 n_x = mix(vec2(n00, n01), vec2(n10, n11), fade_xy.x);
-    float n_xy = mix(n_x.x, n_x.y, fade_xy.y);
-    return 2.3 * n_xy;
+// new noise function
+float Perlin2D( vec2 P ) {
+    //  https://github.com/BrianSharpe/Wombat/blob/master/Perlin2D.glsl
+
+    // establish our grid cell and unit position
+    vec2 Pi = floor(P);
+    vec4 Pf_Pfmin1 = P.xyxy - vec4( Pi, Pi + 1.0 );
+
+    // calculate the hash
+    vec4 Pt = vec4( Pi.xy, Pi.xy + 1.0 );
+    Pt = Pt - floor(Pt * ( 1.0 / 71.0 )) * 71.0;
+    Pt += vec2( 26.0, 161.0 ).xyxy;
+    Pt *= Pt;
+    Pt = Pt.xzxz * Pt.yyww;
+    vec4 hash_x = fract( Pt * ( 1.0 / 951.135664 ) );
+    vec4 hash_y = fract( Pt * ( 1.0 / 642.949883 ) );
+
+    // calculate the gradient results
+    vec4 grad_x = hash_x - 0.49999;
+    vec4 grad_y = hash_y - 0.49999;
+    vec4 grad_results = inversesqrt( grad_x * grad_x + grad_y * grad_y ) * ( grad_x * Pf_Pfmin1.xzxz + grad_y * Pf_Pfmin1.yyww );
+
+    // Classic Perlin Interpolation
+    grad_results *= 1.4142135623730950488016887242097;  // scale things to a strict -1.0->1.0 range  *= 1.0/sqrt(0.5)
+    vec2 blend = Pf_Pfmin1.xy * Pf_Pfmin1.xy * Pf_Pfmin1.xy * (Pf_Pfmin1.xy * (Pf_Pfmin1.xy * 6.0 - 15.0) + 10.0);
+    vec4 blend2 = vec4( blend, vec2( 1.0 - blend ) );
+    return dot( grad_results, blend2.zxzx * blend2.wwyy );
 }
-
 
 // hybrid multifractal from https://www.shadertoy.com/view/4sXXW2
 float hybridMultiFractal(vec2 point) {
@@ -66,7 +56,7 @@ float hybridMultiFractal(vec2 point) {
     float offset =  0.7;
     float lacunarity = 2;
     float octaves = 8;
-    float frequency = 0.45; //0.7;
+    float frequency = 0.55;// 0.45; //0.7;
 
 
 	float value = 1.0;
@@ -76,34 +66,24 @@ float hybridMultiFractal(vec2 point) {
 	float pwr = pwHL;
 	float weight = 0.;
 
-	/* get first octave of function */
-	// built with simplex => value = pwr*(snoise(point * frequency)+offset);
-    // built with classic Perlin noise
-    value = pwr*(cnoise(point * frequency)+offset);
+	// get zeroth octave of function
+    value = pwr*(Perlin2D(point * frequency)+offset);
 	weight = value;
 	point *= lacunarity;
 	pwr *= pwHL;
 
-	/* spectral construction inner loop, where the fractal is built */
-	for (int i=1; i<65535; i++)
-	{
+	for (int i=1; i<octaves; i++) {
 		weight = weight>1. ? 1. : weight;
 
-		// built with simplex => signal = pwr * (snoise(point*frequency) + offset);
         // built with classic Perlin noise
-        signal = pwr * (cnoise(point*frequency) + offset);
-		
+		signal = pwr*(Perlin2D(point * frequency)+offset);
         
         value += weight*signal;
 		weight *= signal;
 		pwr *= pwHL;
 		point *= lacunarity;
-		if (i==int(octaves)-1) break;
+		// if (i==int(octaves)-1) break;
 	}
-
-	/* take care of remainder in ``octaves''  */
-	rmd = octaves - floor(octaves);
-	if (rmd != 0.0) value += (rmd * cnoise(point*frequency) * pwr);
 
 	return value;
 }

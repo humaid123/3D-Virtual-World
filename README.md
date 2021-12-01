@@ -1,0 +1,1 @@
+Credit to Brian Sharpe's Wombat project for efficient implementation of the noise functions https://github.com/BrianSharpe/Wombat

@@ -66,7 +66,7 @@ void main() {
     vec4 refractColour = texture(refractionTexture, refractionUV);
 
     FragColor = mix(reflectColour, refractColour, 0.3); // more reflection, the smaller the number
-    FragColor = mix(FragColor, waterColour, 0.5); // add displacement based on the layered periodic coordinates
+    FragColor = mix(FragColor, waterColour, 0.2); // add displacement based on the layered periodic coordinates
     FragColor = mix(FragColor, vec4(0.0, 0.1, 0.2, 1.0), 0.2); // add a bluish color
 }
 )"

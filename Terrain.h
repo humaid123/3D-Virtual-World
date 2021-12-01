@@ -37,8 +37,8 @@ public:
         terrainShader->add_fshader_from_source(terrain_fshader);
         terrainShader->link();
 
-        const std::string list[] = { "grass", "rock", "sand", "snow", "lunar" };
-        for (int i=0 ; i < 5 ; ++i) {
+        const std::string list[] = { "grass", "rock", "sand", "snow" };
+        for (int i=0 ; i < 4 ; ++i) {
             loadTexture(terrainTextures[list[i]], (list[i]+".png").c_str());
             terrainTextures[list[i]]->bind();
             glGenerateMipmap(GL_TEXTURE_2D);
@@ -51,27 +51,20 @@ public:
         terrainMesh = std::unique_ptr<GPUMesh>(new GPUMesh());
         // divides the plane rectangle into n_width along the width and n_height along the height to create a 
         // displaceable grid.
-        int n_width = 1024;
+        int n_width =  1024;
         int n_height = 1024;
 
         std::vector<Vec3> points;
         std::vector<unsigned int> indices;
-        std::vector<Vec2> texCoords;
 
         for (int j = 0; j < n_width; ++j) {
             for (int i = 0; i < n_height; ++i) {
-
                 // we create a vertices from [-size_grid_x, size_grid_x] instead of [-1, 1] => this creates a larger terrain 
                 // that we can blur to give the illusion that it is infinite
                 float vertX = -size_grid_x / 2 + j / (float)n_width * size_grid_x;
                 float vertY = -size_grid_y / 2 + i / (float)n_height * size_grid_y;
                 float vertZ = 0.0f;
                 points.push_back(Vec3(vertX, vertY, vertZ));
-
-                // we place the texture coordinates so that they are between [0, 1] dependending on where they are uniformly on [0, n_width-1]
-                float texX = i / (float)(n_width - 1);
-                float texY = j / (float)(n_height - 1);
-                texCoords.push_back(Vec2(texX, texY));
             }
         }
 
@@ -103,7 +96,6 @@ public:
 
         terrainMesh->set_vbo<Vec3>("vposition", points);
         terrainMesh->set_triangles(indices);
-        terrainMesh->set_vtexcoord(texCoords);
     }
 
     void draw(Camera camera, Vec3 clipPlaneNormal, float clipPlaneHeight) {

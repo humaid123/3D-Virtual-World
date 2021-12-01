@@ -16,14 +16,13 @@ int main(int, char**){
 
     Application app;
 
-    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
     glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);     // Make skybox seamless
     glEnable(GL_DEPTH_TEST);     // enable depth test for skybox and so on
     glEnable(GL_CLIP_DISTANCE0); // enables the first clipping plane in the program => shaders can now use gl_ClipDistance[0]
 
     float waterHeight = 0.5f;
     Vec3 skyColor = Vec3(0.6, 0.7, 0.8);
-    Vec3 lightPos = Vec3(10.0f, 10.0f, 10.0f);
+    Vec3 lightPos = Vec3(30.0f, 30.0f, 30.0f);
     float size_grid_x = 20, size_grid_y = 20; // make grid bigger [-10, 10] instead of [-1, 1] to hide rendering distance.
 
 
@@ -47,13 +46,13 @@ int main(int, char**){
 
         // for reflection, we draw the whole scene on the FBO from a camera that is position below the current eye position and pointing upwards
         // essentially we get angle of incidence = angle of reflection
-        glViewport(0, 0, water.reflectionWidth, water.reflectionHeight);
-        water.reflectionFBO->bind();
         // to get the reflection, the camera needs to move down and point upwards => move by current distance * 2 down and flip
         // this draws the reflection into the texture
         float distance = 2 * (camera.cameraPos.z() - waterHeight);
         camera.cameraPos.z() -= distance;
         camera.invertPitch();
+        water.reflectionFBO->bind();
+            glViewport(0, 0, water.reflectionWidth, water.reflectionHeight);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             skybox.draw(camera, time);
             terrain.draw(camera, reflectionClipPlaneNormal, reflectionClipPlaneHeight);
@@ -63,8 +62,8 @@ int main(int, char**){
 
         // for refraction, we draw the scene below the water height => we will blend this with 
         // the reflection texture to create a water effect
-        glViewport(0, 0, water.refractionWidth, water.refractionHeight);
         water.refractionFBO->bind();
+            glViewport(0, 0, water.refractionWidth, water.refractionHeight);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             terrain.draw(camera, refractionClipPlaneNormal, refractionClipPlaneHeight);
         water.refractionFBO->unbind();
@@ -79,17 +78,13 @@ int main(int, char**){
     window.set_title("3D-Virtual-World");
     window.set_size(width, height);
 
-
-    // Handle mouse input (looking around the screen)
     Vec2 mouse(0,0);
     window.add_listener<MouseMoveEvent>([&](const MouseMoveEvent &m){
-        // Camera control
         Vec2 delta = m.position - mouse;
         camera.updateYawAndPitch(delta);
         mouse = m.position;
     });
 
-    // Handle keyboard input (moving around the screen)
     window.add_listener<KeyEvent>([&](const KeyEvent &k){
         camera.updateCamera(k);
     });

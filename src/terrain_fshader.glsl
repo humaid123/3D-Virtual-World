@@ -62,7 +62,7 @@ void main() {
     float sandLevel = pureSandLevel + 0.15f;   // sand with some grass or snow
     float grassLevel = sandLevel + 0.25f;      // grass with some grass or snow (preferably snow for some 'snowy grass')
     float rockLevel = grassLevel + 1.6f;       // rock with some grass or snow
-    float snowLevel = rockLevel + 0.5f;        // pure snow
+    float snowLevel = rockLevel + 0.8f;        // pure snow
 
     vec4 col;
 

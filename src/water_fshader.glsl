@@ -58,12 +58,6 @@ void main() {
     vec2 reflectionUV = vec2(ndc_uv.x, 1.0-ndc_uv.y);   // need to change y as inverted (opengl coordinate system problems)
     vec2 refractionUV = vec2(ndc_uv.x, ndc_uv.y); // no need to change y
 
-    // displace the reflection based on time and a simplex noise
-    // vec4 reflectColor = texture(reflectionTexture, vec2(
-    //     reflectionUV.x + 0.1*snoise(vec2(reflectionUV.x, time/3)), 
-    //     reflectionUV.y + 0.1*snoise(vec2(time/3, reflectionUV.y))
-    // ));
-
     vec4 reflectColor = texture(reflectionTexture, vec2(
         reflectionUV.x + 0.01*Perlin2D(vec2(reflectionUV.x, time/2)), 
         reflectionUV.y + 0.01*Perlin2D(vec2(time/2, reflectionUV.y))

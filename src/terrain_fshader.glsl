@@ -77,7 +77,7 @@ void main() {
     
     if (height > snowLevel) {
         col = pureSnowCol;
-        kd = 10.0f;
+        kd = 1.0f;
     } else if (height >= grassLevel && height <= snowLevel) {
         // rock but blend with grass below and snow above
         col = mixBetweenLevels(rockCol, height, grassCol, grassLevel, pureSnowCol, snowLevel);

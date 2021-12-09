@@ -21,7 +21,7 @@ Pictures of 3D Virtual World:
 
 The mountain in the above pictures show the color blendings that were used fram the san texture, the rock texture and the snow and grass texture deposits.
 
-The following pictures show the water reflection and refraction as well as a smooth/beach-like terrain (Picture2) and a noisy/mountainous terrain (Picture3).
+The following pictures show the water reflection and refraction as well as a noisy/mountainous terrain (Picture2) and a smooth/beach-like terrain (Picture3). This is a consequence of using a hybrid multifractal noise.
 
 ![Picture2](https://github.com/humaid123/3D-Virtual-World/blob/main/capture/Picture2.png)
 

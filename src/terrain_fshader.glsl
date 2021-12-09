@@ -73,11 +73,10 @@ void main() {
     vec4 pureSandCol = texture(sand, uv);
 
     // Blinn-Phong constants are placed here so we can update them at each level
-    float ka = 0.05f, kd = 1.2f, ks = 0.7f, p = 0.8f;
+    float ka = 0.05f, kd = 0.5f, ks = 0.7f, p = 0.8f;
     
     if (height > snowLevel) {
         col = pureSnowCol;
-        kd = 1.0f;
     } else if (height >= grassLevel && height <= snowLevel) {
         // rock but blend with grass below and snow above
         col = mixBetweenLevels(rockCol, height, grassCol, grassLevel, pureSnowCol, snowLevel);
@@ -94,7 +93,7 @@ void main() {
 
     // Blinn-Phong calculation
     vec3 lightDir = normalize(lightPos - fragPos);
-    float diffuse = kd * max(0.0f, -dot(normal, lightDir));
+    float diffuse = kd * max(0.0f, dot(normal, lightDir));
 
     vec3 viewDirection = viewPos - fragPos;
     vec3 halfway = normalize(lightDir + viewDirection);

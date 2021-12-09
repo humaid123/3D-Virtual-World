@@ -59,13 +59,13 @@ void main() {
     vec2 refractionUV = vec2(ndc_uv.x, ndc_uv.y); // no need to change y
 
     vec4 reflectColor = texture(reflectionTexture, vec2(
-        reflectionUV.x + 0.01*Perlin2D(vec2(reflectionUV.x, time/2)), 
-        reflectionUV.y + 0.01*Perlin2D(vec2(time/2, reflectionUV.y))
+        reflectionUV.x + 0.02*Perlin2D(vec2(reflectionUV.x, time/2)), 
+        reflectionUV.y + 0.02*Perlin2D(vec2(time/2, reflectionUV.y))
     ));
     
     vec4 refractColor = texture(refractionTexture, refractionUV);
 
-    FragColor = mix(reflectColor, refractColor, 0.3); // more reflection, the smaller the number
+    FragColor = mix(reflectColor, refractColor, /*0.3*/ 0.6); // more reflection, the smaller the number
     FragColor = mix(FragColor, waterColor, 0.2); // add displacement based on the layered periodic coordinates
     FragColor = mix(FragColor, vec4(0.0, 0.1, 0.2, 1.0), 0.2); // add a bluish color
 }

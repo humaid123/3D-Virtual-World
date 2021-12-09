@@ -73,7 +73,7 @@ void main() {
     vec4 pureSandCol = texture(sand, uv);
 
     // Blinn-Phong constants are placed here so we can update them at each level
-    float ka = 0.05f, kd = 0.5f, ks = 0.7f, p = 0.8f;
+    float ka = 0.05f, kd = 0.1f, ks = 0.7f, p = 0.8f;
     
     if (height > snowLevel) {
         col = pureSnowCol;

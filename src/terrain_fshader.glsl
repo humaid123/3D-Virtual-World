@@ -36,8 +36,8 @@ vec4 mixBetweenLevels(vec4 col_middle, float height, vec4 col_lower, float heigh
 
 // mix with grass or snow based on level so that grass/snow appears deposited on the surface
 vec4 mixWithGrassAndSnow(sampler2D base, vec2 uv, float height, float slope) {
-    float mixWithGrassLevel = 1.5f;
-    float mixWithSnowLevel = mixWithGrassLevel + 2.0f;
+    float mixWithGrassLevel = 1.6f;
+    float mixWithSnowLevel = mixWithGrassLevel + 1.6f;
 
     vec4 with_grass = mix(texture(base, uv), texture(grass, uv), slope);
     vec4 with_snow = mix(texture(base, uv), texture(snow, uv), slope);
@@ -60,7 +60,7 @@ void main() {
 
     float pureSandLevel = waterHeight + 0.01f; // beach around the water => pure sand
     float sandLevel = pureSandLevel + 0.15f;   // sand with some grass or snow
-    float grassLevel = sandLevel + 0.25f;      // grass with some grass or snow (preferably snow for some 'snowy grass')
+    float grassLevel = sandLevel + 0.15f;      // grass with some grass or snow (preferably snow for some 'snowy grass')
     float rockLevel = grassLevel + 1.6f;       // rock with some grass or snow
     float snowLevel = rockLevel + 0.8f;        // pure snow
 
@@ -73,7 +73,7 @@ void main() {
     vec4 pureSandCol = texture(sand, uv);
 
     // Blinn-Phong constants are placed here so we can update them at each level
-    float ka = 0.05f, kd = 0.1f, ks = 0.7f, p = 0.8f;
+    float ka = 0.05f, kd = 0.15f, ks = 0.45f, p = 0.8f;
     
     if (height > snowLevel) {
         col = pureSnowCol;

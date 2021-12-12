@@ -105,17 +105,20 @@ float fBm(vec4 uv) {
 }
 
 void main() {    
-    float noise = fBm(0.5 * vec4(2*texCoords, time/2));
+    float noise = fBm(0.5 * vec4(2*texCoords, time/4));
     vec4 skyColor = 0.4 * texture(skybox, texCoords) + 0.6*vec4(baseSkyColor, 1.0); // make more blueish than actual texture
     
-    // use homogenous coordinates for the reduction to texture the clouds
-    vec4 cloudColor = 0.5 * texture(cloudTexture, texCoords.xy/texCoords.z) + 0.5 * vec4(1, 1, 1, 1.0); // make whiter than the actual texture 
-
-    if (noise > 0. && noise <= 0.15) {
+    // sphere mapping for cloud texture
+    float phi = acos(texCoords.y);
+    float pheta = atan(texCoords.z/texCoords.x);
+    vec4 cloudColor = 0.5 * texture(cloudTexture, vec2(phi/6, (3-pheta)/3)) + 0.5 * vec4(1, 1, 1, 1.0);  // make more whitish as well
+    
+    // adding trailing around the edges of a cloud
+    if (noise > 0. && noise <= 0.25) {
         // mix to get seemless transition between background sky and the cloud at the edges of the clouds
-        float scale = (noise / 0.15);
+        float scale = (noise / 0.25);
         FragColor = (1-scale) * skyColor + scale * cloudColor; 
-    } else if (noise > 0.15) {
+    } else if (noise > 0.25) {
         // show the cloud texture if greater than the offset.
         FragColor = cloudColor; 
     } else {

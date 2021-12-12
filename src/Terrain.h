@@ -12,6 +12,10 @@ const char* terrain_fshader =
 #include "terrain_fshader.glsl"
 ;
 
+int index(int i, int j, int cols) {
+    return i + j * cols;
+}
+
 class Terrain {
 public:
     std::unique_ptr<Shader> terrainShader;
@@ -57,10 +61,9 @@ public:
             for (int i = 0; i < n_height; ++i) {
                 // we create a vertices from [-size_grid_x, size_grid_x] instead of [-1, 1] => this creates a larger terrain 
                 // that we can blur to give the illusion that it is infinite
-                float vertX = -size_grid_x / 2 + j / (float)n_width * size_grid_x;
-                float vertY = -size_grid_y / 2 + i / (float)n_height * size_grid_y;
-                float vertZ = 0.0f;
-                points.push_back(Vec3(vertX, vertY, vertZ));
+                float x = -size_grid_x / 2 + (float) j / (float)n_width  * size_grid_x;
+                float y = -size_grid_y / 2 + (float) i / (float)n_height * size_grid_y;
+                points.push_back(Vec3(x, y, 0.0f));
             }
         }
 
@@ -70,16 +73,12 @@ public:
         // opengl provides  glEnable(GL_PRIMITIVE_RESTART) and  glPrimitiveRestartIndex(index)
         // such that when the given index is reached, the next primitive is built
         for(int j = 0; j < n_width - 1; ++j) {
-            float baseX = j * n_width;
-            indices.push_back(baseX);
-            float baseY = ((j + 1) * n_width);
-            indices.push_back(baseY);
+            indices.push_back(index(0, j, n_width));
+            indices.push_back(index(0, j + 1, n_width));
 
             for(int i = 1; i < n_height; ++i) {
-                float tempX = i + j * n_width;
-                indices.push_back(tempX);
-                float tempY = i + (j + 1) * n_height;
-                indices.push_back(tempY);
+                indices.push_back(index(i, j, n_width));
+                indices.push_back(index(i, j + 1, n_height));
             }
 
             // A new strip will begin when this index is reached
